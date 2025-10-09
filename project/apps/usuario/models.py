@@ -12,7 +12,8 @@ class Usuario(AbstractUser):
 
 
     def __str__(self):
-        return f'{self.username}'
+        return f'{self.username} ({self.persona or "sin persona"})'
+
 
     @staticmethod
     def autocomplete_search_fields():
