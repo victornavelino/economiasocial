@@ -26,7 +26,7 @@ class Persona(models.Model):
     localidad = models.ForeignKey('util.Ubicacion', on_delete=models.CASCADE,
                                   related_name='%(app_label)s_%(class)s_localidad', blank=True, null=True)
     domicilio = models.CharField(max_length=100, verbose_name='Domicilio', blank=True, null=True)
-
+    sexo = models.CharField(max_length=1, choices=GENERO, verbose_name='Sexo', blank=True, null=True)
     # ocupacion
     @staticmethod
     def autocomplete_search_fields():
