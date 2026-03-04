@@ -38,7 +38,8 @@ urlpatterns = [
                   path('oauth2/', include((base_urlpatterns, 'oauth2_provider'), namespace='oauth2_provider')),
                   path('auth/', include('rest_framework_social_oauth2.urls', namespace='auth-api')),
                   path('api/v1/usuario/registro/', RegistroUsuarioAPIView.as_view(), name='registro_usuario'),
-                  path('api/v1/', include(router.urls)),
+                  path('api/', include(router.urls)),
+                  path('oidc/', include('mozilla_django_oidc.urls')),
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.ACTIVAR_HERRAMIENTAS_DEBUGGING:

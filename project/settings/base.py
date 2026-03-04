@@ -65,6 +65,7 @@ THIRD_PARTY_APPS = [
     'dal_select2',
     'rest_framework_social_oauth2',
     'django_better_admin_arrayfield',
+    'mozilla_django_oidc',
 ]
 
 PROJECT_APPS = [
@@ -72,6 +73,8 @@ PROJECT_APPS = [
     'core',
     'persona',
     'util',
+    'emprendimiento',
+    'emprendedor',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + PROJECT_APPS
@@ -165,6 +168,7 @@ if "DJANGO_GEOS_LIBRARY_PATH" in env.ENVIRON:
 AUTHENTICATION_BACKENDS = (
     'rest_framework_social_oauth2.backends.DjangoOAuth2',
     'django.contrib.auth.backends.ModelBackend',
+    'mozilla_django_oidc.auth.OIDCAuthenticationBackend',
 )
 
 REST_FRAMEWORK = {
@@ -196,3 +200,43 @@ if ACTIVAR_HERRAMIENTAS_DEBUGGING:
 DRFSO2_URL_NAMESPACE = 'auth-api'
 if "DJANGO_CSRF" in env.ENVIRON:
     CSRF_TRUSTED_ORIGINS = env("DJANGO_CSRF").split(" ")
+
+
+
+# Configuración del Proveedor OIDC 
+OIDC_RP_CLIENT_ID = env.str('OIDC_CLIENT_ID')   # ID del cliente
+OIDC_RP_CLIENT_SECRET = env.str('OIDC_CLIENT_SECRET')  # Secreto
+
+# Endpoints del proveedor
+#OIDC_OP_AUTHORIZATION_ENDPOINT = 'https://tu-proveedor.com/authorize'
+#OIDC_OP_TOKEN_ENDPOINT = 'https://tu-proveedor.com/token'
+#OIDC_OP_USER_ENDPOINT = 'https://tu-proveedor.com/userinfo'
+
+# Discovery
+#OIDC_OP_DISCOVERY_DOCUMENT_URL = 'https://develop-api-mi.catamarca.gob.ar/openid/.well-known/openid-configuration'
+
+# Endpoints manuales (copiados de tu JSON)
+OIDC_OP_AUTHORIZATION_ENDPOINT = "https://develop-api-mi.catamarca.gob.ar/openid/authorize"
+OIDC_OP_TOKEN_ENDPOINT = "https://develop-api-mi.catamarca.gob.ar/openid/token"
+OIDC_OP_USER_ENDPOINT = "https://develop-api-mi.catamarca.gob.ar/openid/userinfo"
+OIDC_OP_JWKS_ENDPOINT = 'https://develop-api-mi.catamarca.gob.ar/openid/jwks'
+# Opcional: para logout
+OIDC_OP_LOGOUT_ENDPOINT = "https://develop-api-mi.catamarca.gob.ar/openid/end-session"
+
+
+# scopes 
+OIDC_RP_SCOPES = 'openid email profile'
+
+# 6. Creación automática de usuarios
+OIDC_CREATE_USER = True 
+
+# Redirecciones
+LOGIN_URL = 'oidc_authentication_init'
+#LOGIN_REDIRECT_URL = '/'  
+LOGIN_REDIRECT_URL = '/admin/'                 
+LOGOUT_REDIRECT_URL = '/'    
+
+OIDC_VERIFY_SSL = False
+
+OIDC_RP_SIGN_ALGO = 'RS256'
+SESSION_SAVE_EVERY_REQUEST = True

@@ -2,10 +2,14 @@ from rest_framework.routers import DefaultRouter
 
 from persona import api as api_persona
 from usuario import api as api_usuario
+from emprendimiento import api as api_emprendimiento
+from emprendedor import api as api_emprendedor
 
 
 router = DefaultRouter()
 
 router.register('persona', api_persona.PersonaViewSet, basename='persona')
 router.register('usuario', api_usuario.UsuarioViewSet, basename='usuario')
+router.register('emprendimiento', api_emprendimiento.EmprendimientoViewSet, basename='emprendimiento')
+router.register('emprendedor', api_emprendedor.EmprendedorViewSet, basename='emprendedor')
 
