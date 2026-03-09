@@ -1,14 +1,15 @@
 import axios, { AxiosInstance } from 'axios';
 import { Emprendedor } from './types';
-
+const url='http://127.0.0.1:8000/api'
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const api: AxiosInstance = axios.create({
-  baseURL: API_URL,
+  baseURL: url,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-
-export const getEmprendedor = (id: number) => api.get<Emprendedor>(`/emprendedores/${id}/`);
+export const getEmprendedores = () => api.get<Emprendedor[]>('/emprendedor/');
+export const getEmprendedor = (id: number) => api.get<Emprendedor>(`/emprendedor/${id}/`);
+export const deleteEmprendedor = (id: number) => api.delete(`/emprendedor/${id}/`);
