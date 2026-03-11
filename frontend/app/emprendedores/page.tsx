@@ -19,7 +19,7 @@ export default function EmprendedoresPage() {
       setLoading(true);
       const response = await getEmprendedores();
       console.log(response.data);
-      //setEmprendedores(response.data);
+      setEmprendedores(response.data);
     } catch (err) {
       setError('Error al cargar los emprendedores');
       console.error(err);
