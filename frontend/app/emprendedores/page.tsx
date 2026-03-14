@@ -67,10 +67,10 @@ export default function EmprendedoresPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <h2 className="text-xl font-semibold">
-                    {emp.nombre} {emp.apellido}
+                    {emp.nombre} {emp.attributes.apellido}
                   </h2>
-                  <p className="text-gray-600">DNI: {emp.documento_identidad}</p>
-                  <p className="text-gray-600">Sexo: {emp.sexo}</p>
+                  <p className="text-gray-600">DNI: {emp.attributes.documento_identidad}</p>
+                  <p className="text-gray-600">Sexo: {emp.attributes.sexo}</p>
                 </div>
                 <div className="flex space-x-2">
                   <Link href={`/emprendedores/${emp.id}`}>
