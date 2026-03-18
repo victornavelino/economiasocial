@@ -18,8 +18,10 @@ export default function EmprendedoresPage() {
     try {
       setLoading(true);
       const response = await getEmprendedores();
-      console.log(response.data);
-      setEmprendedores(response.data);
+      console.log('tipo:', typeof response.data);
+      console.log('es array:', Array.isArray(response.data));
+      console.log('valor:', response.data);
+      setEmprendedores(response.data.data);
     } catch (err) {
       setError('Error al cargar los emprendedores');
       console.error(err);
@@ -67,7 +69,7 @@ export default function EmprendedoresPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <h2 className="text-xl font-semibold">
-                    {emp.nombre} {emp.attributes.apellido}
+                    {emp.attributes.nombre} {emp.attributes.apellido}
                   </h2>
                   <p className="text-gray-600">DNI: {emp.attributes.documento_identidad}</p>
                   <p className="text-gray-600">Sexo: {emp.attributes.sexo}</p>

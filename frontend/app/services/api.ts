@@ -12,4 +12,5 @@ const api: AxiosInstance = axios.create({
 
 export const getEmprendedores = () => api.get<Emprendedor[]>('/emprendedor/');
 export const getEmprendedor = (id: number) => api.get<Emprendedor>(`/emprendedor/${id}/`);
+export const createEmprendedor = (data) => api.post('/emprendedores/', data);
 export const deleteEmprendedor = (id: number) => api.delete(`/emprendedor/${id}/`);
