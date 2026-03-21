@@ -38,6 +38,7 @@ class Emprendedor(models.Model):
     situacion_fiscal = models.ForeignKey(SituacionFiscal, on_delete=models.CASCADE, related_name="emprendedor_situacion_fiscal")     
     medio_de_pago = models.ForeignKey(MedioDePago, on_delete=models.CASCADE, related_name="emprendedor_medio_de_pago") 
     persona = models.OneToOneField(Persona, on_delete=models.CASCADE, related_name='emprendedor_persona')
+    email = models.EmailField(unique=True,null=True, verbose_name='Correo Electronico')
 
     def __str__(self):
         return self.persona.obtener_nombre_completo()

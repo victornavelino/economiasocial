@@ -9,6 +9,8 @@ interface Attributes {
   domicilio: string;
   localidad: string | null;
   sexo: string;
+  mail: string;
+  cuit: string;
   medio_de_pago_id: number;
   medio_de_pago_nombre: string;
   situacion_fiscal_id: number;
@@ -19,4 +21,11 @@ interface Emprendedor {
   type: string;
   id: string;
   attributes: Attributes;
+}
+
+
+export interface CustomPaginatedResponse<T> {
+  links: { next: string | null; previous: string | null };
+  data: T[];
+  meta: { count: number };
 }

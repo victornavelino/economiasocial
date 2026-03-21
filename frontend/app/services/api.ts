@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { Emprendedor } from './types';
+import { Emprendedor, CustomPaginatedResponse } from './types';
 const url='http://127.0.0.1:8000/api'
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -12,5 +12,7 @@ const api: AxiosInstance = axios.create({
 
 export const getEmprendedores = () => api.get<Emprendedor[]>('/emprendedor/');
 export const getEmprendedor = (id: number) => api.get<Emprendedor>(`/emprendedor/${id}/`);
-export const createEmprendedor = (data) => api.post('/emprendedores/', data);
+export const createEmprendedor = (data) => api.post('/emprendedor/', data);
 export const deleteEmprendedor = (id: number) => api.delete(`/emprendedor/${id}/`);
+export const getSituacionesFiscales = () => api.get<CustomPaginatedResponse<{id: number, nombre: string}>>('/situacion-fiscal/');
+export const getMediosDePago = () => api.get<CustomPaginatedResponse<{id: number, nombre: string}>>('/medio-de-pago/');
