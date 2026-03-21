@@ -1,18 +1,33 @@
-import axios, { AxiosInstance } from 'axios';
-import { Emprendedor, CustomPaginatedResponse } from './types';
-const url='http://127.0.0.1:8000/api'
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import axios from 'axios';
 
-const api: AxiosInstance = axios.create({
-  baseURL: url,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+const BASE_URL = 'http://127.0.0.1:8000/api';
 
-export const getEmprendedores = () => api.get<Emprendedor[]>('/emprendedor/');
-export const getEmprendedor = (id: number) => api.get<Emprendedor>(`/emprendedor/${id}/`);
-export const createEmprendedor = (data) => api.post('/emprendedor/', data);
-export const deleteEmprendedor = (id: number) => api.delete(`/emprendedor/${id}/`);
-export const getSituacionesFiscales = () => api.get<CustomPaginatedResponse<{id: number, nombre: string}>>('/situacion-fiscal/');
-export const getMediosDePago = () => api.get<CustomPaginatedResponse<{id: number, nombre: string}>>('/medio-de-pago/');
+const JSONAPI_HEADERS = {
+  'Content-Type': 'application/vnd.api+json',
+  'Accept': 'application/vnd.api+json',
+};
+
+const JSON_HEADERS = {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json',
+};
+
+// ── Emprendedor ──────────────────────────────────────────────────────────────
+export const getEmprendedores = () =>
+  axios.get(`${BASE_URL}/emprendedor/`, { headers: JSON_HEADERS });
+
+export const getEmprendedor = (id: number) =>
+  axios.get(`${BASE_URL}/emprendedor/${id}/`, { headers: JSON_HEADERS });
+
+export const deleteEmprendedor = (id: number) =>
+  axios.delete(`${BASE_URL}/emprendedor/${id}/`, { headers: JSON_HEADERS });
+
+export const createEmprendedor = (data: unknown) =>
+  axios.post(`${BASE_URL}/emprendedor/`, data, { headers: JSON_HEADERS });
+
+// ── Situación fiscal y Medio de pago ────────────────────────────────────────
+export const getSituacionesFiscales = () =>
+  axios.get(`${BASE_URL}/situacion-fiscal/`, { headers: JSON_HEADERS });
+
+export const getMediosDePago = () =>
+  axios.get(`${BASE_URL}/medio-de-pago/`, { headers: JSON_HEADERS });

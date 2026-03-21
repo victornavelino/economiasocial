@@ -2,38 +2,114 @@ from rest_framework import serializers
 from persona.models import Persona
 from .models import Emprendedor, SituacionFiscal, MedioDePago
 
+
 class EmprendedorSerializer(serializers.ModelSerializer):
+    """Serializer de lectura - devuelve datos aplanados del emprendedor y su persona"""
 
-    emprendedor_id=serializers.IntegerField(source='pk')
-    nombre= serializers.CharField(source='persona.nombre',)
-    apellido= serializers.CharField(source='persona.apellido')
-    documento_identidad= serializers.CharField(source='persona.documento_identidad')
-    fecha_nacimiento = serializers.DateField(source='persona.fecha_nacimiento')
-    fecha_alta=serializers.DateField()
-    nacionalidad = serializers.CharField(source='persona.nacionalidad')
-    domicilio = serializers.CharField(source='persona.domicilio')
-    localidad= serializers.CharField(source='persona.localidad')
-    sexo= serializers.CharField(source='persona.sexo')
-    email= serializers.EmailField()
-    cuit= serializers.CharField(source='persona.cuit')
+    emprendedor_id = serializers.IntegerField(source='pk', read_only=True)
+    nombre = serializers.CharField(source='persona.nombre', read_only=True)
+    apellido = serializers.CharField(source='persona.apellido', read_only=True)
+    documento_identidad = serializers.CharField(source='persona.documento_identidad', read_only=True)
+    fecha_nacimiento = serializers.DateField(source='persona.fecha_nacimiento', read_only=True)
+    fecha_alta = serializers.DateField(read_only=True)
+    nacionalidad = serializers.CharField(source='persona.nacionalidad', read_only=True)
+    domicilio = serializers.CharField(source='persona.domicilio', read_only=True)
+    localidad = serializers.CharField(source='persona.localidad', read_only=True)
+    sexo = serializers.CharField(source='persona.sexo', read_only=True)
+    email = serializers.EmailField(read_only=True)
+    cuit = serializers.CharField(source='persona.cuit', read_only=True)
 
-    medio_de_pago_id = serializers.IntegerField(source='medio_de_pago.pk')
-    medio_de_pago_nombre= serializers.CharField(source='medio_de_pago.nombre')
+    medio_de_pago_id = serializers.IntegerField(source='medio_de_pago.pk', read_only=True)
+    medio_de_pago_nombre = serializers.CharField(source='medio_de_pago.nombre', read_only=True)
 
-    situacion_fiscal_id = serializers.IntegerField(source='situacion_fiscal.pk')
-    situacion_fiscal_nombre=serializers.CharField(source='situacion_fiscal.nombre')
+    situacion_fiscal_id = serializers.IntegerField(source='situacion_fiscal.pk', read_only=True)
+    situacion_fiscal_nombre = serializers.CharField(source='situacion_fiscal.nombre', read_only=True)
 
     class Meta:
         model = Emprendedor
-        fields = ['emprendedor_id','nombre','apellido','documento_identidad',
-                  'fecha_nacimiento','fecha_alta','nacionalidad','domicilio',
-                  'localidad','sexo','email','cuit','medio_de_pago_id','medio_de_pago_nombre',
-                  'situacion_fiscal_id','situacion_fiscal_nombre']
+        fields = [
+            'emprendedor_id', 'nombre', 'apellido', 'documento_identidad',
+            'fecha_nacimiento', 'fecha_alta', 'nacionalidad', 'domicilio',
+            'localidad', 'sexo', 'email', 'cuit', 'medio_de_pago_id',
+            'medio_de_pago_nombre', 'situacion_fiscal_id', 'situacion_fiscal_nombre',
+        ]
+
+
+class EmprendedorCreateSerializer(serializers.Serializer):
+    """Serializer de escritura - crea Persona y Emprendedor en una sola llamada"""
+
+    # Campos de Persona
+    nombre = serializers.CharField(max_length=30)
+    apellido = serializers.CharField(max_length=30)
+    documento_identidad = serializers.CharField(max_length=12)
+    cuit = serializers.CharField(max_length=15)
+    fecha_nacimiento = serializers.DateField(required=False, allow_null=True)
+    sexo = serializers.ChoiceField(choices=[('m', 'Masculino'), ('f', 'Femenino'), ('o', 'Otro')], required=False, allow_null=True)
+    domicilio = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    localidad = serializers.IntegerField(required=False, allow_null=True)
+    nacionalidad = serializers.IntegerField(required=False, allow_null=True)
+
+    # Campos de Emprendedor
+    email = serializers.EmailField()
+    medio_de_pago_id = serializers.IntegerField()
+    situacion_fiscal_id = serializers.IntegerField()
+
+    def validate_documento_identidad(self, value):
+        if Persona.objects.filter(documento_identidad=value).exists():
+            raise serializers.ValidationError("Ya existe una persona con ese documento.")
+        return value
+
+    def validate_cuit(self, value):
+        if Persona.objects.filter(cuit=value).exists():
+            raise serializers.ValidationError("Ya existe una persona con ese CUIT.")
+        return value
+
+    def validate_email(self, value):
+        if Emprendedor.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Ya existe un emprendedor con ese email.")
+        return value
+
+    def validate_medio_de_pago_id(self, value):
+        if not MedioDePago.objects.filter(pk=value).exists():
+            raise serializers.ValidationError("Medio de pago no encontrado.")
+        return value
+
+    def validate_situacion_fiscal_id(self, value):
+        if not SituacionFiscal.objects.filter(pk=value).exists():
+            raise serializers.ValidationError("Situación fiscal no encontrada.")
+        return value
+
+    def create(self, validated_data):
+        persona_data = {
+            'nombre': validated_data['nombre'],
+            'apellido': validated_data['apellido'],
+            'documento_identidad': validated_data['documento_identidad'],
+            'cuit': validated_data['cuit'],
+            'fecha_nacimiento': validated_data.get('fecha_nacimiento'),
+            'sexo': validated_data.get('sexo'),
+            'domicilio': validated_data.get('domicilio', ''),
+        }
+        if validated_data.get('localidad'):
+            persona_data['localidad_id'] = validated_data['localidad']
+        if validated_data.get('nacionalidad'):
+            persona_data['nacionalidad_id'] = validated_data['nacionalidad']
+
+        persona = Persona.objects.create(**persona_data)
+
+        emprendedor = Emprendedor.objects.create(
+            persona=persona,
+            email=validated_data['email'],
+            medio_de_pago_id=validated_data['medio_de_pago_id'],
+            situacion_fiscal_id=validated_data['situacion_fiscal_id'],
+        )
+        return emprendedor
+
 
 class SituacionFiscalSerializer(serializers.ModelSerializer):
     class Meta:
         model = SituacionFiscal
         fields = ['id', 'nombre']
+
 
 class MedioDePagoSerializer(serializers.ModelSerializer):
     class Meta:
