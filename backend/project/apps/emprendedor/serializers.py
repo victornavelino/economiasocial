@@ -1,11 +1,11 @@
 from rest_framework import serializers
+from emprendimiento.serializers import EmprendimientoCreateSerializer, EmprendimientoNestedSerializer
 from persona.models import Persona
+from emprendimiento.models import Emprendimiento
 from .models import Emprendedor, SituacionFiscal, MedioDePago
 
 
 class EmprendedorSerializer(serializers.ModelSerializer):
-    """Serializer de lectura - devuelve datos aplanados del emprendedor y su persona"""
-
     emprendedor_id = serializers.IntegerField(source='pk', read_only=True)
     nombre = serializers.CharField(source='persona.nombre', read_only=True)
     apellido = serializers.CharField(source='persona.apellido', read_only=True)
@@ -18,12 +18,11 @@ class EmprendedorSerializer(serializers.ModelSerializer):
     sexo = serializers.CharField(source='persona.sexo', read_only=True)
     email = serializers.EmailField(read_only=True)
     cuit = serializers.CharField(source='persona.cuit', read_only=True)
-
     medio_de_pago_id = serializers.IntegerField(source='medio_de_pago.pk', read_only=True)
     medio_de_pago_nombre = serializers.CharField(source='medio_de_pago.nombre', read_only=True)
-
     situacion_fiscal_id = serializers.IntegerField(source='situacion_fiscal.pk', read_only=True)
     situacion_fiscal_nombre = serializers.CharField(source='situacion_fiscal.nombre', read_only=True)
+    emprendimientos = EmprendimientoNestedSerializer(many=True, read_only=True)
 
     class Meta:
         model = Emprendedor
@@ -32,27 +31,32 @@ class EmprendedorSerializer(serializers.ModelSerializer):
             'fecha_nacimiento', 'fecha_alta', 'nacionalidad', 'domicilio',
             'localidad', 'sexo', 'email', 'cuit', 'medio_de_pago_id',
             'medio_de_pago_nombre', 'situacion_fiscal_id', 'situacion_fiscal_nombre',
+            'emprendimientos',
         ]
 
 
 class EmprendedorCreateSerializer(serializers.Serializer):
-    """Serializer de escritura - crea Persona y Emprendedor en una sola llamada"""
-
-    # Campos de Persona
+    # Datos de Persona
     nombre = serializers.CharField(max_length=30)
     apellido = serializers.CharField(max_length=30)
     documento_identidad = serializers.CharField(max_length=12)
     cuit = serializers.CharField(max_length=15)
     fecha_nacimiento = serializers.DateField(required=False, allow_null=True)
-    sexo = serializers.ChoiceField(choices=[('m', 'Masculino'), ('f', 'Femenino'), ('o', 'Otro')], required=False, allow_null=True)
+    sexo = serializers.ChoiceField(
+        choices=[('m', 'Masculino'), ('f', 'Femenino'), ('o', 'Otro')],
+        required=False, allow_null=True,
+    )
     domicilio = serializers.CharField(max_length=100, required=False, allow_blank=True)
     localidad = serializers.IntegerField(required=False, allow_null=True)
     nacionalidad = serializers.IntegerField(required=False, allow_null=True)
 
-    # Campos de Emprendedor
+    # Datos de Emprendedor
     email = serializers.EmailField()
     medio_de_pago_id = serializers.IntegerField()
     situacion_fiscal_id = serializers.IntegerField()
+
+    # Emprendimientos anidados (opcional, puede ser lista vacía)
+    emprendimientos = EmprendimientoCreateSerializer(many=True, required=False, default=list)
 
     def validate_documento_identidad(self, value):
         if Persona.objects.filter(documento_identidad=value).exists():
@@ -80,6 +84,8 @@ class EmprendedorCreateSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
+        emprendimientos_data = validated_data.pop('emprendimientos', [])
+
         persona_data = {
             'nombre': validated_data['nombre'],
             'apellido': validated_data['apellido'],
@@ -95,13 +101,23 @@ class EmprendedorCreateSerializer(serializers.Serializer):
             persona_data['nacionalidad_id'] = validated_data['nacionalidad']
 
         persona = Persona.objects.create(**persona_data)
-
         emprendedor = Emprendedor.objects.create(
             persona=persona,
             email=validated_data['email'],
             medio_de_pago_id=validated_data['medio_de_pago_id'],
             situacion_fiscal_id=validated_data['situacion_fiscal_id'],
         )
+
+        for emp_data in emprendimientos_data:
+            Emprendimiento.objects.create(
+                emprendedor=emprendedor,
+                nombre_marca=emp_data['nombre_marca'],
+                tipo_produccion=emp_data['tipo_produccion'],
+                nivel_emprendimiento=emp_data.get('nivel_emprendimiento', 'idea_inicial'),
+                rubro_id=emp_data.get('rubro_id'),
+                servicio_id=emp_data.get('servicio_id'),
+            )
+
         return emprendedor
 
 

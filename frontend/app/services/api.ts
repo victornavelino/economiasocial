@@ -12,7 +12,7 @@ const JSON_HEADERS = {
   'Accept': 'application/json',
 };
 
-// ── Emprendedor ──────────────────────────────────────────────────────────────
+
 export const getEmprendedores = () =>
   axios.get(`${BASE_URL}/emprendedor/`, { headers: JSON_HEADERS });
 
@@ -25,7 +25,6 @@ export const deleteEmprendedor = (id: number) =>
 export const createEmprendedor = (data: unknown) =>
   axios.post(`${BASE_URL}/emprendedor/`, data, { headers: JSON_HEADERS });
 
-// ── Situación fiscal y Medio de pago ────────────────────────────────────────
 export const getSituacionesFiscales = () =>
   axios.get(`${BASE_URL}/situacion-fiscal/`, { headers: JSON_HEADERS });
 
