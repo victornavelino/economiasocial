@@ -96,14 +96,8 @@ function Input({ error, ...props }: React.InputHTMLAttributes<HTMLInputElement> 
 function Select({ error, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { error?: boolean }) {
   return (
     <select
-      className={`w-full px-3 py-2.5 rounded-lg border text-sm outline-none appearance-none cursor-pointer transition-all
+      className={`w-full px-3 py-2.5 rounded-lg border text-sm outline-none cursor-pointer transition-all
         ${error ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
-      style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
-        backgroundPosition: 'right 0.75rem center',
-        backgroundSize: '1.25rem',
-        paddingRight: '2.5rem',
-      }}
       onFocus={e => { if (!error) { e.target.style.borderColor = PRIMARY; e.target.style.boxShadow = `0 0 0 2px rgba(26,111,160,0.15)`; } }}
       onBlur={e => { e.target.style.borderColor = ''; e.target.style.boxShadow = ''; }}
       {...props}
