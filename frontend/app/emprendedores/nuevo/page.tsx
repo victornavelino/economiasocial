@@ -15,6 +15,7 @@ import {
 // ── Schemas ────────────────────────────────────────────────────────────────
 const emprendimientoSchema = z.object({
   nombre_marca: z.string().min(1, 'El nombre de marca es obligatorio'),
+  rubro_id: z.coerce.number().min(1, 'Seleccione un Rubro'),
   tipo_produccion: z.enum(['artesanal', 'semi_industrial', 'servicio'], {
     errorMap: () => ({ message: 'Seleccione un tipo' }),
   }),
@@ -125,7 +126,7 @@ export default function NuevoEmprendedor() {
   const router = useRouter();
   const [situaciones, setSituaciones] = useState<{ id: number; nombre: string }[]>([]);
   const [medios, setMedios] = useState<{ id: number; nombre: string }[]>([]);
-  const [rubros, setRubros = useState<{ id: number; nombre: string }[]>([]);
+  const [rubros, setRubros] = useState<{ id: number; nombre: string }[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -151,14 +152,16 @@ export default function NuevoEmprendedor() {
   });
 
   useEffect(() => {
-    Promise.all([getSituacionesFiscales(), getMediosDePago()])
-      .then(([sfRes, mdpRes]) => {
+    Promise.all([getSituacionesFiscales(), getMediosDePago(), getRubros()])
+      .then(([sfRes, mdpRes, rubroRes]) => {
         const sfData = sfRes.data?.results ?? sfRes.data ?? [];
         const mdpData = mdpRes.data?.results ?? mdpRes.data ?? [];
+        const rubroData = rubroRes.data?.results ?? rubroRes.data ?? [];
         const normalize = (items: any[]) =>
           items.map((item) => ({ id: Number(item.id), nombre: item.nombre ?? '' }));
         setSituaciones(normalize(sfData));
         setMedios(normalize(mdpData));
+        setRubros(normalize(rubroData));
       })
       .catch(() => { })
       .finally(() => setLoadingOptions(false));
@@ -184,7 +187,7 @@ export default function NuevoEmprendedor() {
   };
 
   const agregarEmprendimiento = () => {
-    append({ nombre_marca: '', tipo_produccion: 'artesanal', nivel_emprendimiento: 'idea_inicial' });
+    append({ nombre_marca: '',rubro_id: 0, tipo_produccion: 'artesanal', nivel_emprendimiento: 'idea_inicial' });
   };
 
   return (
@@ -388,7 +391,7 @@ export default function NuevoEmprendedor() {
                             <option value="0">— Seleccioná —</option>
                             {rubros.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                           </Select>
-                          <FieldError message={errors.situacion_fiscal_id?.message} />
+                          <FieldError message={errors.rubro_id?.message} />
                         </div>
 
                         {/* Tipo de producción */}
