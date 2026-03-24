@@ -166,10 +166,12 @@ export default function NuevoEmprendedor() {
       .catch(() => { })
       .finally(() => setLoadingOptions(false));
   }, []);
-
+          
   const onSubmit = async (data: FormData) => {
     setSubmitError(null);
+    console.log('entro onsubmit', data)
     try {
+
       await createEmprendedor(data);
       router.push('/emprendedores');
       router.refresh();
@@ -386,12 +388,14 @@ export default function NuevoEmprendedor() {
                           <FieldError message={errors.emprendimientos?.[index]?.nombre_marca?.message} />
                         </div>
                         <div>
-                          <Label htmlFor="rubro_id" required>Rubro</Label>
-                          <Select id="rubro_id" {...register('rubro_id')} error={!!errors.rubro_id}>
+                          <Label htmlFor={`emprendimientos.${index}.rubro_id`} required>
+                            Rubro
+                          </Label>
+                          <Select id="rubro_id" {...register(`emprendimientos.${index}.rubro_id`)}>
                             <option value="0">— Seleccioná —</option>
                             {rubros.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                           </Select>
-                          <FieldError message={errors.rubro_id?.message} />
+                          <FieldError message={errors.emprendimientos?.[index]?.rubro_id?.message} />
                         </div>
 
                         {/* Tipo de producción */}

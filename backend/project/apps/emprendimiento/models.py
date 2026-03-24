@@ -47,7 +47,7 @@ class Emprendimiento(models.Model):
         related_name="rubros_emprendimiento",
     )
     tipo_produccion = models.CharField(max_length=25, choices=TIPOS_PRODUCCION, verbose_name="Tipo de Produccion")
-    emprendedor = models.ForeignKey(Emprendedor, on_delete=models.PROTECT, blank=True, null=True, related_name="emprendimientos")
+    emprendedor = models.ForeignKey(Emprendedor, on_delete=models.CASCADE, blank=True, null=True, related_name="emprendimientos")
     servicio = models.ForeignKey(
         "Servicio",
         on_delete=models.SET_NULL,
