@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createEmprendedor, getSituacionesFiscales, getMediosDePago } from '@/app/services/api';
+import { createEmprendedor, getSituacionesFiscales, getMediosDePago, getRubros } from '@/app/services/api';
 import Link from 'next/link';
 import {
   ArrowLeft, Save, Loader2, User, MapPin, FileText,
@@ -125,6 +125,7 @@ export default function NuevoEmprendedor() {
   const router = useRouter();
   const [situaciones, setSituaciones] = useState<{ id: number; nombre: string }[]>([]);
   const [medios, setMedios] = useState<{ id: number; nombre: string }[]>([]);
+  const [rubros, setRubros = useState<{ id: number; nombre: string }[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -159,7 +160,7 @@ export default function NuevoEmprendedor() {
         setSituaciones(normalize(sfData));
         setMedios(normalize(mdpData));
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingOptions(false));
   }, []);
 
@@ -380,6 +381,14 @@ export default function NuevoEmprendedor() {
                             placeholder="Ej: La Abuela Repostera"
                           />
                           <FieldError message={errors.emprendimientos?.[index]?.nombre_marca?.message} />
+                        </div>
+                        <div>
+                          <Label htmlFor="rubro_id" required>Rubro</Label>
+                          <Select id="rubro_id" {...register('rubro_id')} error={!!errors.rubro_id}>
+                            <option value="0">— Seleccioná —</option>
+                            {rubros.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                          </Select>
+                          <FieldError message={errors.situacion_fiscal_id?.message} />
                         </div>
 
                         {/* Tipo de producción */}

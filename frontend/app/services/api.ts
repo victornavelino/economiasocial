@@ -30,3 +30,6 @@ export const getSituacionesFiscales = () =>
 
 export const getMediosDePago = () =>
   axios.get(`${BASE_URL}/medio-de-pago/`, { headers: JSON_HEADERS });
+
+export const getRubros = () =>
+  axios.get(`${BASE_URL}/rubro/`, { headers: JSON_HEADERS });
