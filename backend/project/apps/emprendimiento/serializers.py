@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Emprendimiento, Rubro
+from .models import Emprendimiento, Rubro, Servicio
 
 class EmprendimientoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -37,4 +37,9 @@ class EmprendimientoNestedSerializer(serializers.ModelSerializer):
 class RubroSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rubro
+        fields = ['id', 'nombre']
+
+class ServicioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Servicio
         fields = ['id', 'nombre']

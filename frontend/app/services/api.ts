@@ -25,6 +25,9 @@ export const deleteEmprendedor = (id: number) =>
 export const createEmprendedor = (data: unknown) =>
   axios.post(`${BASE_URL}/emprendedor/`, data, { headers: JSON_HEADERS });
 
+export const updateEmprendedor = (id: number, data: unknown) =>
+  axios.patch(`${BASE_URL}/emprendedor/${id}/`, data, { headers: JSON_HEADERS });
+
 export const getSituacionesFiscales = () =>
   axios.get(`${BASE_URL}/situacion-fiscal/`, { headers: JSON_HEADERS });
 
@@ -33,3 +36,6 @@ export const getMediosDePago = () =>
 
 export const getRubros = () =>
   axios.get(`${BASE_URL}/rubro/`, { headers: JSON_HEADERS });
+
+export const getServicios = () =>
+  axios.get(`${BASE_URL}/servicio/`, { headers: JSON_HEADERS });

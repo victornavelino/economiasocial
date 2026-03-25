@@ -15,4 +15,5 @@ router.register('emprendedor', api_emprendedor.EmprendedorViewSet, basename='emp
 router.register('situacion-fiscal', api_emprendedor.SituacionFiscalViewSet, basename='situacion-fiscal')
 router.register('medio-de-pago', api_emprendedor.MedioDePagoViewSet, basename='medio-de-pago')
 router.register('rubro', api_emprendimiento.RubroViewSet, basename='rubro')
+router.register('servicio', api_emprendimiento.ServicioViewSet, basename='servicio')
 

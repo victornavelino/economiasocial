@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createEmprendedor, getSituacionesFiscales, getMediosDePago, getRubros } from '@/app/services/api';
+import {
+  createEmprendedor, getSituacionesFiscales, getMediosDePago,
+  getRubros, getServicios,
+} from '@/app/services/api';
 import Link from 'next/link';
 import {
   ArrowLeft, Save, Loader2, User, MapPin, FileText,
@@ -15,9 +18,8 @@ import {
 // ── Schemas ────────────────────────────────────────────────────────────────
 const emprendimientoSchema = z.object({
   nombre_marca: z.string().min(1, 'El nombre de marca es obligatorio'),
-  rubro_id: z.coerce.number().min(1, 'Seleccione un Rubro'),
   tipo_produccion: z.enum(['artesanal', 'semi_industrial', 'servicio'], {
-    errorMap: () => ({ message: 'Seleccione un tipo' }),
+    errorMap: () => ({ message: 'Seleccioná un tipo' }),
   }),
   nivel_emprendimiento: z.enum([
     'idea_inicial',
@@ -26,6 +28,8 @@ const emprendimientoSchema = z.object({
     'escalamiento_productivo',
     'comercializacion_exportacion',
   ]).default('idea_inicial'),
+  rubro_id: z.coerce.number().nullable().optional(),
+  servicio_id: z.coerce.number().nullable().optional(),
 });
 
 const schema = z.object({
@@ -42,8 +46,8 @@ const schema = z.object({
   email: z.string().email('Email inválido'),
   domicilio: z.string().optional(),
   localidad: z.string().optional(),
-  medio_de_pago_id: z.coerce.number().min(1, 'Seleccione un medio de pago'),
-  situacion_fiscal_id: z.coerce.number().min(1, 'Seleccione una situación fiscal'),
+  medio_de_pago_id: z.coerce.number().min(1, 'Seleccioná un medio de pago'),
+  situacion_fiscal_id: z.coerce.number().min(1, 'Seleccioná una situación fiscal'),
   emprendimientos: z.array(emprendimientoSchema).optional(),
 });
 
@@ -64,11 +68,11 @@ const NIVELES = [
   { value: 'comercializacion_exportacion', label: 'Comercialización / Exportación' },
 ];
 
-// ── Componentes auxiliares ──────────────────────────────────────────────────
 const PRIMARY = '#1a6fa0';
 const PRIMARY_LIGHT = '#e8f3fa';
 const ACCENT = '#8dc63f';
 
+// ── Componentes auxiliares ──────────────────────────────────────────────────
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return <p className="mt-1 text-xs text-red-500 font-medium">{message}</p>;
@@ -127,6 +131,7 @@ export default function NuevoEmprendedor() {
   const [situaciones, setSituaciones] = useState<{ id: number; nombre: string }[]>([]);
   const [medios, setMedios] = useState<{ id: number; nombre: string }[]>([]);
   const [rubros, setRubros] = useState<{ id: number; nombre: string }[]>([]);
+  const [servicios, setServicios] = useState<{ id: number; nombre: string }[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -145,33 +150,27 @@ export default function NuevoEmprendedor() {
     },
   });
 
-  // Campo array para emprendimientos
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'emprendimientos',
-  });
+  const { fields, append, remove } = useFieldArray({ control, name: 'emprendimientos' });
 
   useEffect(() => {
-    Promise.all([getSituacionesFiscales(), getMediosDePago(), getRubros()])
-      .then(([sfRes, mdpRes, rubroRes]) => {
-        const sfData = sfRes.data?.results ?? sfRes.data ?? [];
-        const mdpData = mdpRes.data?.results ?? mdpRes.data ?? [];
-        const rubroData = rubroRes.data?.results ?? rubroRes.data ?? [];
-        const normalize = (items: any[]) =>
-          items.map((item) => ({ id: Number(item.id), nombre: item.nombre ?? '' }));
-        setSituaciones(normalize(sfData));
-        setMedios(normalize(mdpData));
-        setRubros(normalize(rubroData));
+    Promise.all([getSituacionesFiscales(), getMediosDePago(), getRubros(), getServicios()])
+      .then(([sfRes, mdpRes, rubroRes, servicioRes]) => {
+        const normalize = (res: any) => {
+          const items = res.data?.results ?? res.data ?? [];
+          return items.map((item: any) => ({ id: Number(item.id), nombre: item.nombre ?? '' }));
+        };
+        setSituaciones(normalize(sfRes));
+        setMedios(normalize(mdpRes));
+        setRubros(normalize(rubroRes));
+        setServicios(normalize(servicioRes));
       })
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => setLoadingOptions(false));
   }, []);
-          
+
   const onSubmit = async (data: FormData) => {
     setSubmitError(null);
-    console.log('entro onsubmit', data)
     try {
-
       await createEmprendedor(data);
       router.push('/emprendedores');
       router.refresh();
@@ -189,7 +188,13 @@ export default function NuevoEmprendedor() {
   };
 
   const agregarEmprendimiento = () => {
-    append({ nombre_marca: '',rubro_id: 0, tipo_produccion: 'artesanal', nivel_emprendimiento: 'idea_inicial' });
+    append({
+      nombre_marca: '',
+      tipo_produccion: 'artesanal',
+      nivel_emprendimiento: 'idea_inicial',
+      rubro_id: null,
+      servicio_id: null,
+    });
   };
 
   return (
@@ -374,7 +379,8 @@ export default function NuevoEmprendedor() {
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {/* Nombre de marca */}
+
+                        {/* Nombre de marca — ocupa toda la fila */}
                         <div className="sm:col-span-2">
                           <Label htmlFor={`emprendimientos.${index}.nombre_marca`} required>
                             Nombre / Marca
@@ -386,16 +392,6 @@ export default function NuevoEmprendedor() {
                             placeholder="Ej: La Abuela Repostera"
                           />
                           <FieldError message={errors.emprendimientos?.[index]?.nombre_marca?.message} />
-                        </div>
-                        <div>
-                          <Label htmlFor={`emprendimientos.${index}.rubro_id`} required>
-                            Rubro
-                          </Label>
-                          <Select id="rubro_id" {...register(`emprendimientos.${index}.rubro_id`)}>
-                            <option value="0">— Seleccioná —</option>
-                            {rubros.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-                          </Select>
-                          <FieldError message={errors.emprendimientos?.[index]?.rubro_id?.message} />
                         </div>
 
                         {/* Tipo de producción */}
@@ -415,7 +411,7 @@ export default function NuevoEmprendedor() {
                           <FieldError message={errors.emprendimientos?.[index]?.tipo_produccion?.message} />
                         </div>
 
-                        {/* Nivel */}
+                        {/* Nivel actual */}
                         <div>
                           <Label htmlFor={`emprendimientos.${index}.nivel_emprendimiento`}>
                             Nivel actual
@@ -429,6 +425,35 @@ export default function NuevoEmprendedor() {
                             ))}
                           </Select>
                         </div>
+
+                        {/* Rubro — correctamente dentro del fieldArray */}
+                        <div>
+                          <Label htmlFor={`emprendimientos.${index}.rubro_id`}>Rubro</Label>
+                          <Select
+                            id={`emprendimientos.${index}.rubro_id`}
+                            {...register(`emprendimientos.${index}.rubro_id`)}
+                          >
+                            <option value="">— Sin rubro —</option>
+                            {rubros.map((r) => (
+                              <option key={r.id} value={r.id}>{r.nombre}</option>
+                            ))}
+                          </Select>
+                        </div>
+
+                        {/* Servicio */}
+                        <div>
+                          <Label htmlFor={`emprendimientos.${index}.servicio_id`}>Servicio</Label>
+                          <Select
+                            id={`emprendimientos.${index}.servicio_id`}
+                            {...register(`emprendimientos.${index}.servicio_id`)}
+                          >
+                            <option value="">— Sin servicio —</option>
+                            {servicios.map((s) => (
+                              <option key={s.id} value={s.id}>{s.nombre}</option>
+                            ))}
+                          </Select>
+                        </div>
+
                       </div>
                     </div>
                   ))}

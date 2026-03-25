@@ -7,7 +7,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center gap-2 text-xl font-bold">
             <span style={{ color: '#8dc63f' }}>●</span>
-            <span>Emprendedores</span>
+            <span>Trabajadores de la Economia Social</span>
           </Link>
           <div className="flex space-x-2">
             <Link
