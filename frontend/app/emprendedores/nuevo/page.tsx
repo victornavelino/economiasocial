@@ -28,8 +28,8 @@ const emprendimientoSchema = z.object({
     'escalamiento_productivo',
     'comercializacion_exportacion',
   ]).default('idea_inicial'),
-  rubro_id: z.coerce.number().nullable().optional(),
-  servicio_id: z.coerce.number().nullable().optional(),
+  rubro_id: z.preprocess((val) => (val === "" ? null : Number(val)), z.number().nullable().optional()),
+  servicio_id: z.preprocess((val) => (val === "" ? null : Number(val)), z.number().nullable().optional()),
 });
 
 const schema = z.object({
@@ -41,17 +41,19 @@ const schema = z.object({
   cuit: z
     .string().length(11, 'Debe tener 11 dígitos sin guiones')
     .regex(/^\d+$/, 'Solo números'),
-  fecha_nacimiento: z.string().optional(),
-  sexo: z.enum(['m', 'f', 'o']).optional(),
+  fecha_nacimiento: z.string().default(''),
+  sexo: z.enum(['m', 'f', 'o']).default('m'),
   email: z.string().email('Email inválido'),
-  domicilio: z.string().optional(),
-  localidad: z.coerce.number().nullable().optional(),
-  medio_de_pago_id: z.coerce.number().min(1, 'Seleccioná un medio de pago'),
-  situacion_fiscal_id: z.coerce.number().min(1, 'Seleccioná una situación fiscal'),
-  emprendimientos: z.array(emprendimientoSchema).optional(),
+  domicilio: z.string().default(''),
+  localidad: z.preprocess((val) => (val === "" ? null : Number(val)), z.number().nullable()).default(null),
+  medio_de_pago_id: z.preprocess((val) => Number(val), z.number().min(1, 'Seleccioná un medio de pago')),
+  situacion_fiscal_id: z.preprocess((val) => Number(val), z.number().min(1, 'Seleccioná una situación fiscal')),
+  emprendimientos: z.array(emprendimientoSchema).default([]),
 });
 
+
 type FormData = z.infer<typeof schema>;
+
 
 // ── Constantes ─────────────────────────────────────────────────────────────
 const TIPOS_PRODUCCION = [

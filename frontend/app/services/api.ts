@@ -1,71 +1,66 @@
 import axios from 'axios';
+import { getSession } from 'next-auth/react';
 
-const BASE_URL = 'http://127.0.0.1:8000/api';
-
-const JSONAPI_HEADERS = {
-  'Content-Type': 'application/vnd.api+json',
-  'Accept': 'application/vnd.api+json',
-};
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json',
   'Accept': 'application/json',
 };
 
+const api = axios.create({
+  baseURL: BASE_URL,
+  headers: JSON_HEADERS,
+});
 
-export const getEmprendedores = () =>
-  axios.get(`${BASE_URL}/emprendedor/`, { headers: JSON_HEADERS });
+// Interceptor para inyectar el token de sesión
+api.interceptors.request.use(async (config) => {
+  const session: any = await getSession();
+  if (session?.accessToken) {
+    config.headers.Authorization = `Bearer ${session.accessToken}`;
+  }
+  return config;
+});
 
-export const getEmprendedor = (id: number) =>
-  axios.get(`${BASE_URL}/emprendedor/${id}/`, { headers: JSON_HEADERS });
 
-export const deleteEmprendedor = (id: number) =>
-  axios.delete(`${BASE_URL}/emprendedor/${id}/`, { headers: JSON_HEADERS });
+export const getEmprendedores = () => api.get('/emprendedor/');
 
-export const createEmprendedor = (data: unknown) =>
-  axios.post(`${BASE_URL}/emprendedor/`, data, { headers: JSON_HEADERS });
+export const getEmprendedor = (id: number) => api.get(`/emprendedor/${id}/`);
 
-export const updateEmprendedor = (id: number, data: unknown) =>
-  axios.patch(`${BASE_URL}/emprendedor/${id}/`, data, { headers: JSON_HEADERS });
+export const deleteEmprendedor = (id: number) => api.delete(`/emprendedor/${id}/`);
 
-export const getSituacionesFiscales = () =>
-  axios.get(`${BASE_URL}/situacion-fiscal/`, { headers: JSON_HEADERS });
+export const createEmprendedor = (data: unknown) => api.post('/emprendedor/', data);
 
-export const getSituacionFiscal = (id: number) =>
-  axios.get(`${BASE_URL}/situacion-fiscal/${id}/`, { headers: JSON_HEADERS });
+export const updateEmprendedor = (id: number, data: unknown) => api.patch(`/emprendedor/${id}/`, data);
 
-export const createSituacionFiscal = (data: { nombre: string }) =>
-  axios.post(`${BASE_URL}/situacion-fiscal/`, data, { headers: JSON_HEADERS });
 
-export const updateSituacionFiscal = (id: number, data: { nombre: string }) =>
-  axios.patch(`${BASE_URL}/situacion-fiscal/${id}/`, data, { headers: JSON_HEADERS });
+export const getSituacionesFiscales = () => api.get('/situacion-fiscal/');
 
-export const deleteSituacionFiscal = (id: number) =>
-  axios.delete(`${BASE_URL}/situacion-fiscal/${id}/`, { headers: JSON_HEADERS });
+export const getSituacionFiscal = (id: number) => api.get(`/situacion-fiscal/${id}/`);
 
-export const getMediosDePago = () =>
-  axios.get(`${BASE_URL}/medio-de-pago/`, { headers: JSON_HEADERS });
+export const createSituacionFiscal = (data: { nombre: string }) => api.post('/situacion-fiscal/', data);
 
-export const getMedioDePago = (id: number) =>
-  axios.get(`${BASE_URL}/medio-de-pago/${id}/`, { headers: JSON_HEADERS });
+export const updateSituacionFiscal = (id: number, data: { nombre: string }) => api.patch(`/situacion-fiscal/${id}/`, data);
 
-export const createMedioDePago = (data: { nombre: string }) =>
-  axios.post(`${BASE_URL}/medio-de-pago/`, data, { headers: JSON_HEADERS });
+export const deleteSituacionFiscal = (id: number) => api.delete(`/situacion-fiscal/${id}/`);
 
-export const updateMedioDePago = (id: number, data: { nombre: string }) =>
-  axios.patch(`${BASE_URL}/medio-de-pago/${id}/`, data, { headers: JSON_HEADERS });
+export const getMediosDePago = () => api.get('/medio-de-pago/');
 
-export const deleteMedioDePago = (id: number) =>
-  axios.delete(`${BASE_URL}/medio-de-pago/${id}/`, { headers: JSON_HEADERS });
+export const getMedioDePago = (id: number) => api.get(`/medio-de-pago/${id}/`);
 
-export const getRubros = () =>
-  axios.get(`${BASE_URL}/rubro/`, { headers: JSON_HEADERS });
+export const createMedioDePago = (data: { nombre: string }) => api.post('/medio-de-pago/', data);
 
-export const getServicios = () =>
-  axios.get(`${BASE_URL}/servicio/`, { headers: JSON_HEADERS });
+export const updateMedioDePago = (id: number, data: { nombre: string }) => api.patch(`/medio-de-pago/${id}/`, data);
+
+export const deleteMedioDePago = (id: number) => api.delete(`/medio-de-pago/${id}/`);
+
+export const getRubros = () => api.get('/rubro/');
+
+export const getServicios = () => api.get('/servicio/');
 
 export const getLocalidades = (search?: string) => {
   const params: Record<string, string> = { tipo: 'LO' };
   if (search && search.trim()) params['search'] = search.trim();
-  return axios.get(`${BASE_URL}/ubicacion/`, { headers: JSON_HEADERS, params });
-};
+  return api.get('/ubicacion/', { params });
+};
+
