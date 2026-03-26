@@ -31,8 +31,32 @@ export const updateEmprendedor = (id: number, data: unknown) =>
 export const getSituacionesFiscales = () =>
   axios.get(`${BASE_URL}/situacion-fiscal/`, { headers: JSON_HEADERS });
 
+export const getSituacionFiscal = (id: number) =>
+  axios.get(`${BASE_URL}/situacion-fiscal/${id}/`, { headers: JSON_HEADERS });
+
+export const createSituacionFiscal = (data: { nombre: string }) =>
+  axios.post(`${BASE_URL}/situacion-fiscal/`, data, { headers: JSON_HEADERS });
+
+export const updateSituacionFiscal = (id: number, data: { nombre: string }) =>
+  axios.patch(`${BASE_URL}/situacion-fiscal/${id}/`, data, { headers: JSON_HEADERS });
+
+export const deleteSituacionFiscal = (id: number) =>
+  axios.delete(`${BASE_URL}/situacion-fiscal/${id}/`, { headers: JSON_HEADERS });
+
 export const getMediosDePago = () =>
   axios.get(`${BASE_URL}/medio-de-pago/`, { headers: JSON_HEADERS });
+
+export const getMedioDePago = (id: number) =>
+  axios.get(`${BASE_URL}/medio-de-pago/${id}/`, { headers: JSON_HEADERS });
+
+export const createMedioDePago = (data: { nombre: string }) =>
+  axios.post(`${BASE_URL}/medio-de-pago/`, data, { headers: JSON_HEADERS });
+
+export const updateMedioDePago = (id: number, data: { nombre: string }) =>
+  axios.patch(`${BASE_URL}/medio-de-pago/${id}/`, data, { headers: JSON_HEADERS });
+
+export const deleteMedioDePago = (id: number) =>
+  axios.delete(`${BASE_URL}/medio-de-pago/${id}/`, { headers: JSON_HEADERS });
 
 export const getRubros = () =>
   axios.get(`${BASE_URL}/rubro/`, { headers: JSON_HEADERS });
