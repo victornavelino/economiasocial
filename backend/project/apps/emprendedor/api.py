@@ -7,6 +7,7 @@ from .models import Emprendedor, SituacionFiscal, MedioDePago
 from .serializers import (
     EmprendedorSerializer,
     EmprendedorCreateSerializer,
+    EmprendedorUpdateSerializer,
     SituacionFiscalSerializer,
     MedioDePagoSerializer,
 )
@@ -20,8 +21,10 @@ class EmprendedorViewSet(viewsets.ModelViewSet):
     renderer_classes = [JSONRenderer]
 
     def get_serializer_class(self):
-        if self.action in ('create', 'update', 'partial_update'):
+        if self.action == 'create':
             return EmprendedorCreateSerializer
+        elif self.action in ('update', 'partial_update'):
+            return EmprendedorUpdateSerializer
         return EmprendedorSerializer
 
     def create(self, request, *args, **kwargs):
@@ -30,6 +33,19 @@ class EmprendedorViewSet(viewsets.ModelViewSet):
         emprendedor = serializer.save()
         output = EmprendedorSerializer(emprendedor)
         return Response(output.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = EmprendedorUpdateSerializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        emprendedor = serializer.save()
+        output = EmprendedorSerializer(emprendedor)
+        return Response(output.data, status=status.HTTP_200_OK)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
 
 
 class SituacionFiscalViewSet(viewsets.ModelViewSet):

@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   getEmprendedor, updateEmprendedor,
   getSituacionesFiscales, getMediosDePago,
-  getRubros, getServicios,
+  getRubros, getServicios, getLocalidades,
 } from '@/app/services/api';
 import Link from 'next/link';
 import {
   ArrowLeft, Save, Loader2, User, MapPin, FileText,
-  Briefcase, Plus, Trash2, AlertCircle,
+  Briefcase, Plus, Trash2, AlertCircle, Search,
 } from 'lucide-react';
 
 // ── Schemas ────────────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ const schema = z.object({
   sexo: z.enum(['m', 'f', 'o']).optional().nullable(),
   email: z.string().email('Email inválido'),
   domicilio: z.string().optional().nullable(),
-  localidad: z.string().optional().nullable(),
+  localidad: z.coerce.number().nullable().optional(),
   medio_de_pago_id: z.coerce.number().min(1, 'Seleccioná un medio de pago'),
   situacion_fiscal_id: z.coerce.number().min(1, 'Seleccioná una situación fiscal'),
   emprendimientos: z.array(emprendimientoSchema).optional(),
@@ -169,6 +169,129 @@ function SectionTitle({
   );
 }
 
+// ── Combobox de localidad ──────────────────────────────────────────────────
+type LocalidadOption = { id: number; nombre: string; parent_nombre: string | null };
+
+function LocalidadCombobox({
+  value, onChange, initialNombre, error,
+}: {
+  value: number | null | undefined;
+  onChange: (id: number | null) => void;
+  initialNombre?: string | null;
+  error?: boolean;
+}) {
+  const [query, setQuery] = useState('');
+  const [options, setOptions] = useState<LocalidadOption[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<LocalidadOption | null>(
+    value && initialNombre ? { id: value, nombre: initialNombre, parent_nombre: null } : null
+  );
+
+  // Si llega un valor inicial después de montar el componente
+  useEffect(() => {
+    if (value && initialNombre && !selected) {
+      setSelected({ id: value, nombre: initialNombre, parent_nombre: null });
+    }
+    if (!value) {
+      setSelected(null);
+      setQuery('');
+    }
+  }, [value, initialNombre]);
+
+  // Buscar con debounce
+  useEffect(() => {
+    if (!query || query.trim().length < 2) { setOptions([]); return; }
+    const timer = setTimeout(() => {
+      setLoading(true);
+      getLocalidades(query)
+        .then((res) => {
+          const items = res.data?.results ?? res.data ?? [];
+          setOptions(items);
+          setOpen(true);
+        })
+        .catch(() => setOptions([]))
+        .finally(() => setLoading(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const handleSelect = (opt: LocalidadOption) => {
+    setSelected(opt);
+    setQuery('');
+    setOpen(false);
+    onChange(opt.id);
+  };
+
+  const handleClear = () => {
+    setSelected(null);
+    setQuery('');
+    setOpen(false);
+    onChange(null);
+  };
+
+  return (
+    <div className="relative">
+      {selected ? (
+        <div
+          className={`w-full px-3 py-2.5 rounded-lg border text-sm flex items-center justify-between bg-white
+            ${error ? 'border-red-300' : 'border-slate-200'}`}
+        >
+          <span className="text-slate-800">
+            {selected.nombre}
+            {selected.parent_nombre && (
+              <span className="text-slate-400 ml-1 text-xs">({selected.parent_nombre})</span>
+            )}
+          </span>
+          <button type="button" onClick={handleClear} className="text-slate-400 hover:text-slate-600 text-xs ml-2">
+            ✕
+          </button>
+        </div>
+      ) : (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            className={`w-full pl-8 pr-3 py-2.5 rounded-lg border text-sm outline-none transition-all
+              ${error ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+            placeholder="Buscar localidad..."
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); if (e.target.value.trim().length < 2) setOpen(false); }}
+            onFocus={() => { if (options.length > 0) setOpen(true); }}
+            onBlur={() => setTimeout(() => setOpen(false), 150)}
+            style={{ borderColor: open ? PRIMARY : '', boxShadow: open ? `0 0 0 2px rgba(26,111,160,0.15)` : '' }}
+          />
+          {loading && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 animate-spin" />
+          )}
+        </div>
+      )}
+
+      {open && options.length > 0 && (
+        <ul className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+          {options.map((opt) => (
+            <li
+              key={opt.id}
+              onMouseDown={() => handleSelect(opt)}
+              className="px-3 py-2 text-sm cursor-pointer hover:bg-slate-50 flex justify-between items-center"
+            >
+              <span className="text-slate-800">{opt.nombre}</span>
+              {opt.parent_nombre && (
+                <span className="text-slate-400 text-xs">{opt.parent_nombre}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {open && !loading && query.length >= 2 && options.length === 0 && (
+        <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg px-3 py-2 text-sm text-slate-400">
+          Sin resultados para "{query}"
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Página principal ────────────────────────────────────────────────────────
 export default function EditarEmprendedor() {
   const router = useRouter();
@@ -179,6 +302,7 @@ export default function EditarEmprendedor() {
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [initialLocalidadNombre, setInitialLocalidadNombre] = useState<string | null>(null);
 
   const [situaciones, setSituaciones] = useState<{ id: number; nombre: string }[]>([]);
   const [medios, setMedios] = useState<{ id: number; nombre: string }[]>([]);
@@ -197,6 +321,7 @@ export default function EditarEmprendedor() {
       sexo: 'm',
       medio_de_pago_id: 0,
       situacion_fiscal_id: 0,
+      localidad: null,
       emprendimientos: [],
     },
   });
@@ -219,7 +344,7 @@ export default function EditarEmprendedor() {
         setRubros(normalize(rubroRes));
         setServicios(normalize(servicioRes));
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingOptions(false));
   }, []);
 
@@ -231,9 +356,9 @@ export default function EditarEmprendedor() {
     getEmprendedor(id)
       .then((res) => {
         const d = res.data;
+        // Guardamos el nombre de la localidad para precargarlo en el combobox
+        setInitialLocalidadNombre(d.localidad_nombre ?? d.localidad ?? null);
 
-        // El backend devuelve localidad como string (nombre), pero el form la maneja
-        // como texto libre; lo mismo con nacionalidad.
         reset({
           nombre: d.nombre ?? '',
           apellido: d.apellido ?? '',
@@ -243,7 +368,7 @@ export default function EditarEmprendedor() {
           sexo: d.sexo ?? 'm',
           email: d.email ?? '',
           domicilio: d.domicilio ?? '',
-          localidad: d.localidad ?? '',
+          localidad: d.localidad_id ?? null,
           medio_de_pago_id: d.medio_de_pago_id ?? 0,
           situacion_fiscal_id: d.situacion_fiscal_id ?? 0,
           emprendimientos: (d.emprendimientos ?? []).map((emp: any) => ({
@@ -264,7 +389,7 @@ export default function EditarEmprendedor() {
     setSubmitError(null);
     try {
       await updateEmprendedor(id, data);
-      router.push(`/emprendedores/${id}`);
+      router.push('/emprendedores');
       router.refresh();
     } catch (err: any) {
       const apiErrors = err?.response?.data;
@@ -453,11 +578,19 @@ export default function EditarEmprendedor() {
                 </div>
                 <div className="sm:col-span-2">
                   <Label htmlFor="localidad">Localidad</Label>
-                  <Input
-                    id="localidad"
-                    {...register('localidad')}
-                    placeholder="San Fernando del Valle de Catamarca"
+                  <Controller
+                    control={control}
+                    name="localidad"
+                    render={({ field }) => (
+                      <LocalidadCombobox
+                        value={field.value}
+                        onChange={field.onChange}
+                        initialNombre={initialLocalidadNombre}
+                        error={!!errors.localidad}
+                      />
+                    )}
                   />
+                  <FieldError message={errors.localidad?.message} />
                 </div>
               </div>
             </div>

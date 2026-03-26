@@ -39,3 +39,9 @@ export const getRubros = () =>
 
 export const getServicios = () =>
   axios.get(`${BASE_URL}/servicio/`, { headers: JSON_HEADERS });
+
+export const getLocalidades = (search?: string) => {
+  const params: Record<string, string> = { tipo: 'LO' };
+  if (search && search.trim()) params['search'] = search.trim();
+  return axios.get(`${BASE_URL}/ubicacion/`, { headers: JSON_HEADERS, params });
+};
