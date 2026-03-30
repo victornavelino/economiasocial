@@ -63,4 +63,4 @@ export const getLocalidades = (search?: string) => {
   if (search && search.trim()) params['search'] = search.trim();
   return api.get('/ubicacion/', { params });
 };
-
+
