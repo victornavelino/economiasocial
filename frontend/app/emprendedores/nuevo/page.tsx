@@ -168,7 +168,7 @@ function LocalidadCombobox({
           // No hay endpoint por id, buscamos en primeros resultados
           // Si no lo encontramos, dejamos vacío el label
         })
-        .catch(() => {});
+        .catch(() => { });
     }
     if (!value) { setSelected(null); setQuery(''); }
   }, [value]);
@@ -289,12 +289,13 @@ export default function NuevoEmprendedor() {
         setRubros(normalize(rubroRes));
         setServicios(normalize(servicioRes));
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingOptions(false));
   }, []);
 
   const onSubmit = async (data: FormData) => {
     setSubmitError(null);
+    console.log(data);
     try {
       await createEmprendedor(data);
       router.push('/emprendedores');
