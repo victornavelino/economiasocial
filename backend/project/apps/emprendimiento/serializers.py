@@ -8,6 +8,7 @@ class EmprendimientoSerializer(serializers.ModelSerializer):
 
 
 class EmprendimientoCreateSerializer(serializers.Serializer):
+    id = serializers.IntegerField(required=False, allow_null=True)
     nombre_marca = serializers.CharField(max_length=150)
     tipo_produccion = serializers.ChoiceField(choices=[
         ('artesanal', 'Artesanal'),
@@ -35,11 +36,13 @@ class EmprendimientoNestedSerializer(serializers.ModelSerializer):
 
 
 class RubroSerializer(serializers.ModelSerializer):
+    parent = serializers.PrimaryKeyRelatedField(queryset=Rubro.objects.all(), allow_null=True, required=False)
     class Meta:
         model = Rubro
-        fields = ['id', 'nombre']
+        fields = ['id', 'nombre', 'tipo', 'parent']
 
 class ServicioSerializer(serializers.ModelSerializer):
+    parent = serializers.PrimaryKeyRelatedField(queryset=Servicio.objects.all(), allow_null=True, required=False)
     class Meta:
         model = Servicio
-        fields = ['id', 'nombre']
+        fields = ['id', 'nombre', 'tipo', 'parent']

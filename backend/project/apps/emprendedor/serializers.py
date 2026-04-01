@@ -150,6 +150,7 @@ class EmprendedorUpdateSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False)
     medio_de_pago_id = serializers.IntegerField(required=False)
     situacion_fiscal_id = serializers.IntegerField(required=False)
+    emprendimientos = EmprendimientoCreateSerializer(many=True, required=False)
 
     def validate_documento_identidad(self, value):
         if self.instance and self.instance.persona.documento_identidad == value:
@@ -204,9 +205,43 @@ class EmprendedorUpdateSerializer(serializers.Serializer):
 
         # Actualizar emprendedor
         for attr, value in validated_data.items():
-            if value is not None:
+            if attr != 'emprendimientos' and value is not None:
                 setattr(instance, attr, value)
         instance.save()
+
+        # Actualizar emprendimientos anidados
+        if 'emprendimientos' in validated_data:
+            emprendimientos_data = validated_data['emprendimientos']
+            existing_ids = [e.id for e in instance.emprendimientos.all()]
+            incoming_ids = [e['id'] for e in emprendimientos_data if e.get('id')]
+
+            # 1. Eliminar los que no están en la lista recibida
+            for old_id in existing_ids:
+                if old_id not in incoming_ids:
+                    Emprendimiento.objects.filter(id=old_id).delete()
+
+            # 2. Crear o actualizar
+            for emp_data in emprendimientos_data:
+                emp_id = emp_data.get('id')
+                if emp_id and emp_id in existing_ids:
+                    # Actualizar existente
+                    Emprendimiento.objects.filter(id=emp_id).update(
+                        nombre_marca=emp_data['nombre_marca'],
+                        tipo_produccion=emp_data['tipo_produccion'],
+                        nivel_emprendimiento=emp_data.get('nivel_emprendimiento', 'idea_inicial'),
+                        rubro_id=emp_data.get('rubro_id'),
+                        servicio_id=emp_data.get('servicio_id'),
+                    )
+                else:
+                    # Crear nuevo
+                    Emprendimiento.objects.create(
+                        emprendedor=instance,
+                        nombre_marca=emp_data['nombre_marca'],
+                        tipo_produccion=emp_data['tipo_produccion'],
+                        nivel_emprendimiento=emp_data.get('nivel_emprendimiento', 'idea_inicial'),
+                        rubro_id=emp_data.get('rubro_id'),
+                        servicio_id=emp_data.get('servicio_id'),
+                    )
 
         return instance
 
