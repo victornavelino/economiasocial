@@ -12,10 +12,14 @@ import { ArrowLeft, Save, Loader2, Layers } from 'lucide-react';
 const schema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio'),
   tipo: z.enum(['rubro', 'subrubro']),
-  parent: z.union([z.number(), z.null()]).optional(),
+  parent: z.any().transform(val => (val === "" || val === null || val === undefined ? null : Number(val))),
 });
 
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  nombre: string;
+  tipo: 'rubro' | 'subrubro';
+  parent: number | null;
+};
 
 const PRIMARY = '#1a6fa0';
 const ACCENT = '#8dc63f';
@@ -54,14 +58,10 @@ export default function NuevoRubro() {
   }, []);
 
   const onSubmit = async (data: FormData) => {
+    console.log("Enviando Rubro:", data);
     setSubmitError(null);
     try {
-      // Convert empty string from select to null
-      const formattedData = {
-        ...data,
-        parent: data.parent || null
-      };
-      await createRubro(formattedData);
+      await createRubro(data);
       router.push('/rubro');
       router.refresh();
     } catch (err: any) {

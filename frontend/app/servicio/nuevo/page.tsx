@@ -12,10 +12,14 @@ import { ArrowLeft, Save, Loader2, Scissors } from 'lucide-react';
 const schema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio'),
   tipo: z.enum(['servicio', 'subservicio']),
-  parent: z.union([z.number(), z.null()]).optional(),
+  parent: z.any().transform(val => (val === "" || val === null || val === undefined ? null : Number(val))),
 });
 
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  nombre: string;
+  tipo: 'servicio' | 'subservicio';
+  parent: number | null;
+};
 
 const PRIMARY = '#1a6fa0';
 
@@ -52,13 +56,10 @@ export default function NuevoServicio() {
   }, []);
 
   const onSubmit = async (data: FormData) => {
+    console.log("Enviando Servicio:", data);
     setSubmitError(null);
     try {
-      const formattedData = {
-        ...data,
-        parent: data.parent || null
-      };
-      await createServicio(formattedData);
+      await createServicio(data);
       router.push('/servicio');
       router.refresh();
     } catch (err: any) {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useSession } from 'next-auth/react';
 import {
   createEmprendedor, getSituacionesFiscales, getMediosDePago,
   getRubros, getServicios, getLocalidades,
@@ -18,9 +19,7 @@ import {
 // ── Schemas ────────────────────────────────────────────────────────────────
 const emprendimientoSchema = z.object({
   nombre_marca: z.string().min(1, 'El nombre de marca es obligatorio'),
-  tipo_produccion: z.enum(['artesanal', 'semi_industrial', 'servicio'], {
-    errorMap: () => ({ message: 'Seleccioná un tipo' }),
-  }),
+  tipo_produccion: z.enum(['artesanal', 'semi_industrial', 'servicio']),
   nivel_emprendimiento: z.enum([
     'idea_inicial',
     'produccion_pequena_escala',
@@ -28,8 +27,8 @@ const emprendimientoSchema = z.object({
     'escalamiento_productivo',
     'comercializacion_exportacion',
   ]).default('idea_inicial'),
-  rubro_id: z.preprocess((val) => (val === "" ? null : Number(val)), z.number().nullable().optional()),
-  servicio_id: z.preprocess((val) => (val === "" ? null : Number(val)), z.number().nullable().optional()),
+  rubro_id: z.any().transform(val => (val === "" || val === null ? null : Number(val))),
+  servicio_id: z.any().transform(val => (val === "" || val === null ? null : Number(val))),
 });
 
 const schema = z.object({
@@ -45,14 +44,32 @@ const schema = z.object({
   sexo: z.enum(['m', 'f', 'o']).default('m'),
   email: z.string().email('Email inválido'),
   domicilio: z.string().default(''),
-  localidad: z.preprocess((val) => (val === "" ? null : Number(val)), z.number().nullable()).default(null),
-  medio_de_pago_id: z.preprocess((val) => Number(val), z.number().min(1, 'Seleccioná un medio de pago')),
-  situacion_fiscal_id: z.preprocess((val) => Number(val), z.number().min(1, 'Seleccioná una situación fiscal')),
+  localidad: z.any().transform(val => (val === "" || val === null ? null : Number(val))),
+  medio_de_pago_id: z.any().transform(val => Number(val)),
+  situacion_fiscal_id: z.any().transform(val => Number(val)),
   emprendimientos: z.array(emprendimientoSchema).default([]),
 });
 
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  nombre: string;
+  apellido: string;
+  documento_identidad: string;
+  cuit: string;
+  fecha_nacimiento: string;
+  sexo: 'm' | 'f' | 'o';
+  email: string;
+  domicilio: string;
+  localidad: number | null;
+  medio_de_pago_id: number;
+  situacion_fiscal_id: number;
+  emprendimientos: {
+    nombre_marca: string;
+    tipo_produccion: 'artesanal' | 'semi_industrial' | 'servicio';
+    nivel_emprendimiento: 'idea_inicial' | 'produccion_pequena_escala' | 'produccion_habilitada' | 'escalamiento_productivo' | 'comercializacion_exportacion';
+    rubro_id: number | null;
+    servicio_id: number | null;
+  }[];
+};
 
 
 // ── Constantes ─────────────────────────────────────────────────────────────
@@ -252,6 +269,7 @@ function LocalidadCombobox({
 // ── Página principal ────────────────────────────────────────────────────────
 export default function NuevoEmprendedor() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [situaciones, setSituaciones] = useState<{ id: number; nombre: string }[]>([]);
   const [medios, setMedios] = useState<{ id: number; nombre: string }[]>([]);
   const [rubros, setRubros] = useState<{ id: number; nombre: string }[]>([]);
@@ -263,6 +281,7 @@ export default function NuevoEmprendedor() {
     register,
     handleSubmit,
     control,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -274,6 +293,23 @@ export default function NuevoEmprendedor() {
       emprendimientos: [],
     },
   });
+
+  // Pre-llenado con OIDC
+  useEffect(() => {
+    if (session?.userProfile) {
+      const prof = session.userProfile;
+      reset((prev) => ({
+        ...prev,
+        nombre: prof.given_name || '',
+        apellido: prof.family_name || '',
+        email: prof.email || '',
+        documento_identidad: prof.documento || '',
+        cuit: prof.cuil || '',
+        fecha_nacimiento: prof.birthdate || '',
+        sexo: (prof.gender === 'm' || prof.gender === 'f' || prof.gender === 'o') ? prof.gender : 'm',
+      }));
+    }
+  }, [session, reset]);
 
   const { fields, append, remove } = useFieldArray({ control, name: 'emprendimientos' });
 
@@ -327,17 +363,17 @@ export default function NuevoEmprendedor() {
     <div className="min-h-screen" style={{ backgroundColor: '#f4f8fb' }}>
 
       {/* Header sticky */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-10 lg:static">
+        <div className="max-w-3xl mx-auto px-4 py-3 sm:py-4 flex items-center gap-3">
           <Link
             href="/emprendedores"
             className="p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-700"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Emprendedores</p>
-            <h1 className="text-xl font-bold text-slate-800">Nuevo Emprendedor</h1>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider font-medium truncate">Emprendedores</p>
+            <h1 className="text-lg sm:text-xl font-bold text-slate-800 truncate">Nuevo Emprendedor</h1>
           </div>
         </div>
       </div>
@@ -347,7 +383,7 @@ export default function NuevoEmprendedor() {
           <div className="space-y-6">
 
             {/* ── Datos personales ── */}
-            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm">
               <SectionTitle icon={User} title="Datos personales" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -391,7 +427,7 @@ export default function NuevoEmprendedor() {
             </div>
 
             {/* ── Domicilio ── */}
-            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm">
               <SectionTitle icon={MapPin} title="Domicilio" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
@@ -417,7 +453,7 @@ export default function NuevoEmprendedor() {
             </div>
 
             {/* ── Situación fiscal ── */}
-            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm">
               <SectionTitle icon={FileText} title="Situación fiscal" />
               {loadingOptions ? (
                 <div className="flex items-center gap-2 text-slate-400 text-sm py-4">
@@ -447,7 +483,7 @@ export default function NuevoEmprendedor() {
             </div>
 
             {/* ── Emprendimientos ── */}
-            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 rounded-md" style={{ backgroundColor: '#f0f9e6' }}>
@@ -594,11 +630,11 @@ export default function NuevoEmprendedor() {
             )}
 
             {/* Acciones */}
-            <div className="flex justify-end gap-3 pt-2 pb-8">
-              <Link href="/emprendedores">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2 pb-8">
+              <Link href="/emprendedores" className="w-full sm:w-auto">
                 <button
                   type="button"
-                  className="px-5 py-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="w-full px-5 py-3 sm:py-2.5 rounded-xl sm:rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -606,7 +642,7 @@ export default function NuevoEmprendedor() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-white text-sm font-semibold shadow-sm disabled:opacity-50 transition-opacity hover:opacity-90"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 sm:py-2.5 rounded-xl sm:rounded-lg text-white text-sm font-semibold shadow-sm disabled:opacity-50 transition-opacity hover:opacity-90"
                 style={{ backgroundColor: PRIMARY }}
               >
                 {isSubmitting ? (

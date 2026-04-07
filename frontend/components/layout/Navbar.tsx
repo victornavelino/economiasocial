@@ -1,112 +1,196 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { LogIn, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import {
+  LayoutDashboard,
+  Users,
+  CreditCard,
+  FileText,
+  Scissors,
+  Layers,
+  Rocket,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  User as UserIcon,
+  LogIn,
+  Menu,
+} from 'lucide-react';
+
+const MENU_ITEMS = [
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/emprendedores', label: 'Emprendedores', icon: Users },
+  { href: '/emprendimientos', label: 'Emprendimientos', icon: Rocket },
+  { href: '/servicio', label: 'Servicios', icon: Scissors },
+  { href: '/rubro', label: 'Rubros', icon: Layers },
+  { href: '/mediodepago', label: 'Medios de Pago', icon: CreditCard },
+  { href: '/situacionfiscal', label: 'Sit. Fiscales', icon: FileText },
+];
+
+const PRIMARY = '#1a6fa0';
+const ACCENT = '#8dc63f';
 
 export default function Navbar() {
   const { data: session, status } = useSession();
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  return (
-    <nav style={{ backgroundColor: '#1a6fa0' }} className="text-white shadow-lg">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
-          <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-            <span style={{ color: '#8dc63f' }}>●</span>
-            <span className="hidden sm:inline">Trabajadores de la Economia Social</span>
-            <span className="sm:hidden">TES</span>
-          </Link>
+  // Auto-collapse factor: on small desktops
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) setIsCollapsed(true);
+      else setIsCollapsed(false);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-          <div className="flex items-center space-x-1">
-            <div className="hidden md:flex space-x-1 mr-4">
-              <Link
-                href="/emprendedores"
-                className="px-3 py-2 rounded font-medium transition-colors hover:bg-white/10 text-sm"
-              >
-                Emprendedores
-              </Link>
-              <Link
-                href="/mediodepago"
-                className="px-3 py-2 rounded font-medium transition-colors hover:bg-white/10 text-sm"
-              >
-                Medios de Pago
-              </Link>
-              <Link
-                href="/situacionfiscal"
-                className="px-3 py-2 rounded font-medium transition-colors hover:bg-white/10 text-sm"
-              >
-                Situaciones Fiscales
-              </Link>
-              <Link
-                href="/emprendimientos"
-                className="px-3 py-2 rounded font-medium transition-colors hover:bg-white/10 text-sm"
-              >
-                Emprendimientos
-              </Link>
+  const NavItem = ({ href, label, icon: Icon }: any) => {
+    const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
+    
+    return (
+      <Link
+        href={href}
+        className={`group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 mb-1 ${
+          isActive 
+            ? 'bg-white/15 text-white shadow-sm' 
+            : 'text-white/70 hover:bg-white/10 hover:text-white'
+        }`}
+        title={isCollapsed ? label : ''}
+      >
+        <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-green-400' : 'group-hover:scale-110 transition-transform'}`} 
+              style={{ color: isActive ? ACCENT : '' }} />
+        {!isCollapsed && <span className="font-medium text-sm truncate">{label}</span>}
+        {isActive && !isCollapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ACCENT }} />}
+      </Link>
+    );
+  };
+
+  const sidebarContent = (
+    <div className={`flex flex-col h-full text-white transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}
+         style={{ backgroundColor: PRIMARY }}>
+      
+      {/* Header */}
+      <div className="h-20 flex items-center px-4 border-b border-white/10 relative">
+        <Link href="/" className="flex items-center gap-2 overflow-hidden">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: ACCENT }}>
+            <span className="font-bold text-white text-lg leading-none">E</span>
+          </div>
+          {!isCollapsed && (
+            <div className="flex flex-col leading-none">
+              <span className="font-bold text-sm tracking-tight">Economía</span>
+              <span className="text-[11px] font-medium text-white/60">Social</span>
             </div>
+          )}
+        </Link>
+        
+        <button 
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute -right-3 top-7 w-6 h-6 rounded-full bg-white text-[#1a6fa0] border border-slate-200 flex items-center justify-center shadow-md hover:scale-110 transition-all z-50 hidden lg:flex"
+        >
+          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
+      </div>
 
-            <div className="h-6 w-px bg-white/20 mx-2 hidden md:block" />
+      {/* Navigation */}
+      <div className="flex-1 overflow-y-auto py-6 px-3 scrollbar-hide">
+        {!isCollapsed && <p className="text-[10px] uppercase font-bold text-white/40 px-3 mb-4 tracking-widest">Menú Principal</p>}
+        {MENU_ITEMS.map((item) => (
+          <NavItem key={item.href} {...item} />
+        ))}
+      </div>
 
-            {status === 'loading' ? (
-              <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />
-            ) : session ? (
-              <div className="relative">
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-all border border-white/10"
-                >
-                  {session.user?.image ? (
-                    <img src={session.user.image} alt="" className="w-6 h-6 rounded-full" />
-                  ) : (
-                    <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                      <UserIcon className="w-3.5 h-3.5" />
-                    </div>
-                  )}
-                  <span className="text-sm font-semibold max-w-[100px] truncate">
-                    {session.user?.name || session.user?.email}
-                  </span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {isUserMenuOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-20"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    />
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-30 text-slate-700 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="px-4 py-2 border-b border-slate-50 mb-1">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Usuario</p>
-                        <p className="text-sm font-semibold truncate text-slate-800">{session.user?.email}</p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setIsUserMenuOpen(false);
-                          signOut({ callbackUrl: '/' });
-                        }}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Cerrar Sesión
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
+      {/* User Section */}
+      <div className="p-4 border-t border-white/10">
+        {status === 'loading' ? (
+          <div className="h-12 w-full bg-white/5 animate-pulse rounded-xl" />
+        ) : session ? (
+          <div className={`flex items-center gap-3 p-2 rounded-xl bg-white/5 border border-white/5 ${isCollapsed ? 'justify-center' : ''}`}>
+            {session.user?.image ? (
+              <img src={session.user.image} alt="" className="w-8 h-8 rounded-lg border border-white/10 shadow-sm" />
             ) : (
-              <button
-                onClick={() => signIn('micatamarca')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-[#1a6fa0] text-sm font-bold shadow-sm hover:bg-opacity-90 transition-all active:scale-95"
+              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center border border-white/10">
+                <UserIcon className="w-4 h-4 text-white/60" />
+              </div>
+            )}
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0 pr-2">
+                <p className="text-xs font-bold truncate leading-tight">{session.user?.name || 'Usuario'}</p>
+                <p className="text-[10px] text-white/50 truncate">{session.user?.email}</p>
+              </div>
+            )}
+            {!isCollapsed && (
+              <button 
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="p-1.5 rounded-md hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors"
+                title="Cerrar sesión"
               >
-                <LogIn className="w-4 h-4" />
-                Ingresar
+                <LogOut className="w-4 h-4" />
               </button>
             )}
           </div>
-        </div>
+        ) : (
+          <button
+            onClick={() => signIn('micatamarca')}
+            className={`w-full flex items-center gap-2 py-3 rounded-xl font-bold text-sm bg-white text-[#1a6fa0] hover:bg-white/90 shadow-lg active:scale-95 transition-all ${isCollapsed ? 'justify-center px-0' : 'px-4'}`}
+          >
+            <LogIn className="w-5 h-5 shrink-0" />
+            {!isCollapsed && <span>Ingresar</span>}
+          </button>
+        )}
       </div>
-    </nav>
+    </div>
   );
-}
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:block relative z-40">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Toggle & Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-40 shadow-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: PRIMARY }}>
+             <span className="font-bold text-white text-lg leading-none">E</span>
+          </div>
+          <span className="font-bold text-slate-800 tracking-tight">Economía Social</span>
+        </div>
+        <button 
+          onClick={() => setIsMobileOpen(!isMobileOpen)}
+          className="p-2 rounded-lg bg-slate-50 text-slate-500 hover:text-[#1a6fa0] transition-colors"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100]"
+          onClick={() => setIsMobileOpen(false)}
+        >
+          <div 
+            className="h-full w-64 animate-in slide-in-from-left duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {sidebarContent}
+            {/* Override the width for mobile */}
+            <style jsx global>{`
+              .lg\\:hidden div { width: 16rem !important; }
+            `}</style>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Content Spacer */}
+      <div className="lg:hidden h-16" />
+    </>
+  );
+}
