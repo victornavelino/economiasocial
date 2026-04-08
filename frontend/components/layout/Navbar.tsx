@@ -52,29 +52,43 @@ export default function Navbar() {
 
   const NavItem = ({ href, label, icon: Icon }: any) => {
     const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
-    
+
     return (
       <Link
         href={href}
-        className={`group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 mb-1 ${
-          isActive 
-            ? 'bg-white/15 text-white shadow-sm' 
+        className={`group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 mb-1 ${isActive
+            ? 'bg-white/15 text-white shadow-sm'
             : 'text-white/70 hover:bg-white/10 hover:text-white'
-        }`}
+          }`}
         title={isCollapsed ? label : ''}
       >
-        <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-green-400' : 'group-hover:scale-110 transition-transform'}`} 
-              style={{ color: isActive ? ACCENT : '' }} />
+        <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-green-400' : 'group-hover:scale-110 transition-transform'}`}
+          style={{ color: isActive ? ACCENT : '' }} />
         {!isCollapsed && <span className="font-medium text-sm truncate">{label}</span>}
         {isActive && !isCollapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ACCENT }} />}
       </Link>
     );
   };
 
+  const handleLogout = async () => {
+    const idToken = (session as any)?.idToken;
+    // Cerrar sesión localmente sin redirección automática
+    await signOut({ redirect: false });
+
+    if (idToken) {
+      // Redirigir al endpoint de cierre de sesión de Mi Catamarca
+      const endSessionUrl = "https://develop-api-mi.catamarca.gob.ar/openid/end-session";
+      const postLogoutRedirectUri = encodeURIComponent(window.location.origin);
+      window.location.href = `${endSessionUrl}?id_token_hint=${idToken}&post_logout_redirect_uri=${postLogoutRedirectUri}`;
+    } else {
+      window.location.href = "/";
+    }
+  };
+
   const sidebarContent = (
     <div className={`flex flex-col h-full text-white transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}
-         style={{ backgroundColor: PRIMARY }}>
-      
+      style={{ backgroundColor: PRIMARY }}>
+
       {/* Header */}
       <div className="h-20 flex items-center px-4 border-b border-white/10 relative">
         <Link href="/" className="flex items-center gap-2 overflow-hidden">
@@ -88,8 +102,8 @@ export default function Navbar() {
             </div>
           )}
         </Link>
-        
-        <button 
+
+        <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3 top-7 w-6 h-6 rounded-full bg-white text-[#1a6fa0] border border-slate-200 flex items-center justify-center shadow-md hover:scale-110 transition-all z-50 hidden lg:flex"
         >
@@ -125,8 +139,8 @@ export default function Navbar() {
               </div>
             )}
             {!isCollapsed && (
-              <button 
-                onClick={() => signOut({ callbackUrl: '/' })}
+              <button
+                onClick={handleLogout}
                 className="p-1.5 rounded-md hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors"
                 title="Cerrar sesión"
               >
@@ -158,11 +172,11 @@ export default function Navbar() {
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-40 shadow-sm">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: PRIMARY }}>
-             <span className="font-bold text-white text-lg leading-none">E</span>
+            <span className="font-bold text-white text-lg leading-none">E</span>
           </div>
           <span className="font-bold text-slate-800 tracking-tight">Economía Social</span>
         </div>
-        <button 
+        <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
           className="p-2 rounded-lg bg-slate-50 text-slate-500 hover:text-[#1a6fa0] transition-colors"
         >
@@ -172,11 +186,11 @@ export default function Navbar() {
 
       {/* Mobile Overlay */}
       {isMobileOpen && (
-        <div 
+        <div
           className="lg:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100]"
           onClick={() => setIsMobileOpen(false)}
         >
-          <div 
+          <div
             className="h-full w-64 animate-in slide-in-from-left duration-300"
             onClick={(e) => e.stopPropagation()}
           >

@@ -1,6 +1,8 @@
 import NextAuth from "next-auth"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
+  secret: process.env.AUTH_SECRET,
   providers: [
     {
       id: "micatamarca",
@@ -15,6 +17,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       token: "https://develop-api-mi.catamarca.gob.ar/openid/token",
       userinfo: "https://develop-api-mi.catamarca.gob.ar/openid/userinfo",
+      jwks_endpoint: "https://develop-api-mi.catamarca.gob.ar/openid/jwks",
       profile(profile) {
         return {
           id: profile.sub,
@@ -32,8 +35,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   ],
   callbacks: {
-    authorized({ auth }) {
-      return !!auth?.user // Forzar login en todo el sitio
+    authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user
+      const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth')
+
+      if (isApiAuthRoute) return true
+      return isLoggedIn
     },
     async jwt({ token, account, user }) {
       if (account && user) {
