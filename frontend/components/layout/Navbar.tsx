@@ -23,7 +23,7 @@ import {
 const MENU_ITEMS = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/emprendedores', label: 'Emprendedores', icon: Users },
-  { href: '/emprendimientos', label: 'Emprendimientos', icon: Rocket },
+  { href: '/emprendimiento', label: 'Emprendimientos', icon: Rocket },
   { href: '/servicio', label: 'Servicios', icon: Scissors },
   { href: '/rubro', label: 'Rubros', icon: Layers },
   { href: '/mediodepago', label: 'Medios de Pago', icon: CreditCard },

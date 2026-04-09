@@ -2,6 +2,14 @@ from rest_framework import serializers
 from .models import Emprendimiento, Rubro, Servicio
 
 class EmprendimientoSerializer(serializers.ModelSerializer):
+    rubro_nombre = serializers.CharField(source='rubro.nombre', read_only=True)
+    emprendedor_nombre = serializers.SerializerMethodField()
+
+    def get_emprendedor_nombre(self, obj):
+        if obj.emprendedor and obj.emprendedor.persona:
+            return f"{obj.emprendedor.persona.nombre} {obj.emprendedor.persona.apellido}"
+        return None
+
     class Meta:
         model = Emprendimiento
         fields = '__all__'

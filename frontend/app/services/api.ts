@@ -34,6 +34,12 @@ export const createEmprendedor = (data: unknown) => api.post('/emprendedor/', da
 export const updateEmprendedor = (id: number, data: unknown) => api.patch(`/emprendedor/${id}/`, data);
 
 
+export const getEmprendimientos = () => api.get('/emprendimiento/');
+
+export const getEmprendimiento = (id: number) => api.get(`/emprendimiento/${id}/`);
+
+
+
 export const getSituacionesFiscales = () => api.get('/situacion-fiscal/');
 
 export const getSituacionFiscal = (id: number) => api.get(`/situacion-fiscal/${id}/`);

@@ -35,25 +35,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   ],
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
+    authorized({ auth, request }) {
       const isLoggedIn = !!auth?.user
-      const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth')
-
+      const isApiAuthRoute = request.nextUrl.pathname.startsWith('/api/auth')
       if (isApiAuthRoute) return true
       return isLoggedIn
+    },
+    async redirect({ url, baseUrl }) {
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url
+      return baseUrl
     },
     async jwt({ token, account, user }) {
       if (account && user) {
         token.accessToken = account.access_token
         token.idToken = account.id_token
-        token.profile = user
+        token.sub = user.id
       }
       return token
     },
     async session({ session, token }: { session: any, token: any }) {
       session.accessToken = token.accessToken
       session.idToken = token.idToken
-      session.userProfile = token.profile
+      session.userId = token.sub
       return session
     },
   },
