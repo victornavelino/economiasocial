@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
@@ -17,6 +17,7 @@ class EmprendedorViewSet(viewsets.ModelViewSet):
     queryset = Emprendedor.objects.select_related(
         'persona', 'medio_de_pago', 'situacion_fiscal'
     ).all()
+    permission_classes = [permissions.IsAuthenticated]
     parser_classes = [JSONParser]
     renderer_classes = [JSONRenderer]
 
@@ -51,6 +52,7 @@ class EmprendedorViewSet(viewsets.ModelViewSet):
 class SituacionFiscalViewSet(viewsets.ModelViewSet):
     queryset = SituacionFiscal.objects.all()
     serializer_class = SituacionFiscalSerializer
+    permission_classes = [permissions.IsAuthenticated]
     parser_classes = [JSONParser]
     renderer_classes = [JSONRenderer]
 
@@ -58,5 +60,6 @@ class SituacionFiscalViewSet(viewsets.ModelViewSet):
 class MedioDePagoViewSet(viewsets.ModelViewSet):
     queryset = MedioDePago.objects.all()
     serializer_class = MedioDePagoSerializer
+    permission_classes = [permissions.IsAuthenticated]
     parser_classes = [JSONParser]
     renderer_classes = [JSONRenderer]
