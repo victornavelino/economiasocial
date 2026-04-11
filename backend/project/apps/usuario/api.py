@@ -69,3 +69,12 @@ class UsuarioViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewset
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_200_OK)
+
+    @action(methods=['get'], detail=False)
+    def me(self, request):
+        """
+        Devuelve el perfil del usuario autenticado.
+        """
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
+

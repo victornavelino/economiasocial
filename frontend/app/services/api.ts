@@ -13,8 +13,14 @@ const api = axios.create({
   headers: JSON_HEADERS,
 });
 
-// Interceptor para inyectar el token de sesión
+// Interceptor para inyectar el token de sesión y la API Key
 api.interceptors.request.use(async (config) => {
+  // Inyectar API Key
+  const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+  if (apiKey) {
+    config.headers['X-Api-Key'] = apiKey;
+  }
+
   const session: any = await getSession();
   if (session?.accessToken) {
     config.headers.Authorization = `Bearer ${session.accessToken}`;

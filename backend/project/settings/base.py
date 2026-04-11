@@ -14,6 +14,13 @@ import environ
 
 CORS_ORIGIN_ALLOW_ALL = True
 
+from corsheaders.defaults import default_headers
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'x-api-key',
+]
+
+
 ROOT_DIR = environ.Path(__file__) - 3
 PROJECT_DIR = ROOT_DIR.path('project')
 APPS_DIR = PROJECT_DIR.path('apps')
@@ -35,6 +42,10 @@ DEBUG = env.bool('DJANGO_DEBUG', True)
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('DJANGO_SECRET_KEY')
 #SECRET_KEY = env('DJANGO_SECRET_KEY', default='CHANGEME!!!' if DEBUG else None)
+
+# API Key para acceso a las APIs
+API_KEY = env('API_KEY')
+
 
 
 
@@ -171,7 +182,7 @@ if "DJANGO_GEOS_LIBRARY_PATH" in env.ENVIRON:
 AUTHENTICATION_BACKENDS = (
     'rest_framework_social_oauth2.backends.DjangoOAuth2',
     'django.contrib.auth.backends.ModelBackend',
-    'mozilla_django_oidc.auth.OIDCAuthenticationBackend',
+    'usuario.oidc.CustomOIDCAuthenticationBackend',
 )
 
 REST_FRAMEWORK = {
@@ -180,6 +191,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'util.paginations.LargePagination',
     'DEFAULT_PARSER_CLASSES': (
         'rest_framework_json_api.parsers.JSONParser',
+        'rest_framework.parsers.JSONParser',
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser'
     ),
@@ -190,8 +202,12 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
+        'util.permissions.HasApiKey',
     ),
-    'DEFAULT_RENDERER_CLASSES': ('rest_framework_json_api.renderers.JSONRenderer',),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework_json_api.renderers.JSONRenderer',
+        'rest_framework.renderers.JSONRenderer',
+    ),
     'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
     'NON_FIELD_ERRORS_KEY': 'error_messages'
 }

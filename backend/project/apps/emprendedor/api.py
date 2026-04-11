@@ -1,4 +1,6 @@
 from rest_framework import viewsets, status, permissions
+from usuario.permissions import IsAdminOrOwner, IsAdminUser
+
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
@@ -14,12 +16,18 @@ from .serializers import (
 
 
 class EmprendedorViewSet(viewsets.ModelViewSet):
-    queryset = Emprendedor.objects.select_related(
-        'persona', 'medio_de_pago', 'situacion_fiscal'
-    ).all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminOrOwner]
     parser_classes = [JSONParser]
     renderer_classes = [JSONRenderer]
+
+    def get_queryset(self):
+        qs = Emprendedor.objects.select_related(
+            'persona', 'medio_de_pago', 'situacion_fiscal'
+        ).all()
+        if self.request.user and not self.request.user.is_staff:
+            return qs.filter(persona=self.request.user.persona)
+        return qs
+
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -52,7 +60,7 @@ class EmprendedorViewSet(viewsets.ModelViewSet):
 class SituacionFiscalViewSet(viewsets.ModelViewSet):
     queryset = SituacionFiscal.objects.all()
     serializer_class = SituacionFiscalSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminUser]
     parser_classes = [JSONParser]
     renderer_classes = [JSONRenderer]
 
@@ -60,6 +68,6 @@ class SituacionFiscalViewSet(viewsets.ModelViewSet):
 class MedioDePagoViewSet(viewsets.ModelViewSet):
     queryset = MedioDePago.objects.all()
     serializer_class = MedioDePagoSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminUser]
     parser_classes = [JSONParser]
     renderer_classes = [JSONRenderer]

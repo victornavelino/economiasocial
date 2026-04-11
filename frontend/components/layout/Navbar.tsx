@@ -19,6 +19,8 @@ import {
   LogIn,
   Menu,
 } from 'lucide-react';
+import { getEmprendedores } from '@/app/services/api';
+
 
 const MENU_ITEMS = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -38,6 +40,34 @@ export default function Navbar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [citizenLink, setCitizenLink] = useState<string | null>(null);
+
+  // Cargar link para ciudadanos si no es staff
+  useEffect(() => {
+    if (session && !(session as any).isStaff && status === 'authenticated') {
+      getEmprendedores()
+        .then((res) => {
+          const items = res.data?.results ?? res.data ?? [];
+          if (items.length > 0) {
+            setCitizenLink(`/emprendedores/${items[0].id}/editar`);
+          } else {
+            setCitizenLink('/emprendedores/nuevo');
+          }
+        })
+        .catch(() => {
+          setCitizenLink('/emprendedores/nuevo');
+        });
+    }
+  }, [session, status]);
+
+  const isAdmin = (session as any)?.isStaff;
+
+  const visibleMenuItems = isAdmin
+    ? MENU_ITEMS
+    : citizenLink
+      ? [{ href: citizenLink, label: 'Mi Inscripción', icon: Users }]
+      : [];
+
 
   // Auto-collapse factor: on small desktops
   useEffect(() => {
@@ -113,8 +143,10 @@ export default function Navbar() {
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto py-6 px-3 scrollbar-hide">
-        {!isCollapsed && <p className="text-[10px] uppercase font-bold text-white/40 px-3 mb-4 tracking-widest">Menú Principal</p>}
-        {MENU_ITEMS.map((item) => (
+        {!isCollapsed && <p className="text-[10px] uppercase font-bold text-white/40 px-3 mb-4 tracking-widest">
+            {isAdmin ? 'Administración' : 'Ciudadano'}
+        </p>}
+        {visibleMenuItems.map((item) => (
           <NavItem key={item.href} {...item} />
         ))}
       </div>

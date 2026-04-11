@@ -48,11 +48,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       else if (new URL(url).origin === baseUrl) return url
       return baseUrl
     },
-    async jwt({ token, account, user }) {
+    async jwt({ token, account, user }: any) {
       if (account && user) {
         token.accessToken = account.access_token
         token.idToken = account.id_token
         token.sub = user.id
+        token.userProfile = user // NextAuth user object contains normalized profile
+      }
+
+      // Fetch extra info from our backend (is_staff, persona_id)
+      if (token.accessToken && !token.backendUser) {
+        try {
+          const res = await fetch(`${process.env.NEXTAUTH_BACKEND_URL}usuario/me/`, {
+            headers: {
+              'Authorization': `Bearer ${token.accessToken}`,
+              'X-Api-Key': process.env.NEXT_PUBLIC_API_KEY || ''
+            }
+          })
+          if (res.ok) {
+            const backendData = await res.json()
+            // JSON API compatibility check
+            const data = backendData.data || backendData
+            token.backendUser = {
+              isStaff: data.is_staff || false,
+              personaId: data.persona || null
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching backend user info:", error)
+        }
       }
       return token
     },
@@ -60,6 +84,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       session.accessToken = token.accessToken
       session.idToken = token.idToken
       session.userId = token.sub
+      session.userProfile = token.userProfile
+      session.isStaff = token.backendUser?.isStaff || false
+      session.personaId = token.backendUser?.personaId || null
       return session
     },
   },
