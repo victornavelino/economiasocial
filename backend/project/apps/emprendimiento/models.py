@@ -39,6 +39,7 @@ class Emprendimiento(models.Model):
     
         
     nombre_marca = models.CharField(max_length=150, verbose_name="Nombre Marca")
+    descripcion = models.TextField(max_length=500, verbose_name="Descripción", null=True, blank=True)
     rubro = models.ForeignKey(
         "Rubro",
         on_delete=models.SET_NULL,

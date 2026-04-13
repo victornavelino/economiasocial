@@ -18,6 +18,7 @@ class EmprendimientoSerializer(serializers.ModelSerializer):
 class EmprendimientoCreateSerializer(serializers.Serializer):
     id = serializers.IntegerField(required=False, allow_null=True)
     nombre_marca = serializers.CharField(max_length=150)
+    descripcion = serializers.CharField(max_length=500, required=False, allow_null=True)
     tipo_produccion = serializers.ChoiceField(choices=[
         ('artesanal', 'Artesanal'),
         ('semi_industrial', 'Semi Industrial'),
@@ -40,7 +41,7 @@ class EmprendimientoCreateSerializer(serializers.Serializer):
 class EmprendimientoNestedSerializer(serializers.ModelSerializer):
     class Meta:
         model = Emprendimiento
-        fields = ['id', 'nombre_marca', 'tipo_produccion', 'nivel_emprendimiento']
+        fields = ['id', 'nombre_marca', 'tipo_produccion', 'nivel_emprendimiento', 'descripcion']
 
 
 class RubroSerializer(serializers.ModelSerializer):

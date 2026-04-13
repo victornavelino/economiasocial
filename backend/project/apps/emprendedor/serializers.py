@@ -66,64 +66,104 @@ class EmprendedorCreateSerializer(serializers.Serializer):
     # Emprendimientos anidados (opcional, puede ser lista vacía)
     emprendimientos = EmprendimientoCreateSerializer(many=True, required=False, default=list)
 
-    def validate_documento_identidad(self, value):
-        if Persona.objects.filter(documento_identidad=value).exists():
-            raise serializers.ValidationError("Ya existe una persona con ese documento.")
-        return value
-
-    def validate_cuit(self, value):
-        if Persona.objects.filter(cuit=value).exists():
-            raise serializers.ValidationError("Ya existe una persona con ese CUIT.")
-        return value
-
     def validate_email(self, value):
         if Emprendedor.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Ya existe un emprendedor con ese email.")
+            raise serializers.ValidationError("Ya existe un emprendedor registrado con ese email.")
         return value
 
     def validate_medio_de_pago_id(self, value):
+        if not value or value == 0:
+            raise serializers.ValidationError("Debés seleccionar un medio de pago.")
         if not MedioDePago.objects.filter(pk=value).exists():
             raise serializers.ValidationError("Medio de pago no encontrado.")
         return value
 
     def validate_situacion_fiscal_id(self, value):
+        if not value or value == 0:
+            raise serializers.ValidationError("Debés seleccionar una situación fiscal.")
         if not SituacionFiscal.objects.filter(pk=value).exists():
             raise serializers.ValidationError("Situación fiscal no encontrada.")
         return value
 
+    def validate(self, data):
+        documento = data.get('documento_identidad')
+        cuit = data.get('cuit')
+
+        persona_por_dni = Persona.objects.filter(documento_identidad=documento).first()
+        persona_por_cuit = Persona.objects.filter(cuit=cuit).first()
+
+        if persona_por_cuit:
+            # El CUIT ya existe — solo es válido si pertenece a la misma persona que el DNI
+            if persona_por_dni is None or persona_por_cuit.pk != persona_por_dni.pk:
+                raise serializers.ValidationError(
+                    {"cuit": "Ya existe una persona registrada con ese CUIT."}
+                )
+
+        return data
+
     def create(self, validated_data):
         emprendimientos_data = validated_data.pop('emprendimientos', [])
 
-        persona_data = {
+        # Usamos get_or_create para no fallar si la Persona ya existe (ej: creada por login OIDC)
+        # Solo actualizamos los campos que vienen en el formulario
+        persona_defaults = {
             'nombre': validated_data['nombre'],
             'apellido': validated_data['apellido'],
-            'documento_identidad': validated_data['documento_identidad'],
             'cuit': validated_data['cuit'],
-            'fecha_nacimiento': validated_data.get('fecha_nacimiento'),
-            'sexo': validated_data.get('sexo'),
-            'domicilio': validated_data.get('domicilio', ''),
         }
+        if validated_data.get('fecha_nacimiento'):
+            persona_defaults['fecha_nacimiento'] = validated_data['fecha_nacimiento']
+        if validated_data.get('sexo'):
+            persona_defaults['sexo'] = validated_data['sexo']
+        if validated_data.get('domicilio'):
+            persona_defaults['domicilio'] = validated_data['domicilio']
         if validated_data.get('localidad'):
-            persona_data['localidad_id'] = validated_data['localidad']
+            persona_defaults['localidad_id'] = validated_data['localidad']
         if validated_data.get('nacionalidad'):
-            persona_data['nacionalidad_id'] = validated_data['nacionalidad']
+            persona_defaults['nacionalidad_id'] = validated_data['nacionalidad']
 
-        persona = Persona.objects.create(**persona_data)
-        emprendedor = Emprendedor.objects.create(
-            persona=persona,
-            email=validated_data['email'],
-            medio_de_pago_id=validated_data['medio_de_pago_id'],
-            situacion_fiscal_id=validated_data['situacion_fiscal_id'],
+        persona, created = Persona.objects.get_or_create(
+            documento_identidad=validated_data['documento_identidad'],
+            defaults=persona_defaults,
         )
 
+        # Si la persona ya existía, actualizamos sus datos con los del formulario
+        if not created:
+            for attr, val in persona_defaults.items():
+                setattr(persona, attr, val)
+            persona.save()
+
+        # En lugar de lanzar error si ya existe el Emprendedor, lo obtenemos o lo creamos
+        # Esto permite añadir nuevos emprendimientos a un emprendedor existente desde este formulario.
+        emprendedor, emp_created = Emprendedor.objects.get_or_create(
+            persona=persona,
+            defaults={
+                'email': validated_data['email'],
+                'medio_de_pago_id': validated_data['medio_de_pago_id'],
+                'situacion_fiscal_id': validated_data['situacion_fiscal_id'],
+            }
+        )
+
+        # Si ya existía el emprendedor, actualizamos sus datos maestros
+        if not emp_created:
+            emprendedor.email = validated_data['email']
+            emprendedor.medio_de_pago_id = validated_data['medio_de_pago_id']
+            emprendedor.situacion_fiscal_id = validated_data['situacion_fiscal_id']
+            emprendedor.save()
+
         for emp_data in emprendimientos_data:
-            Emprendimiento.objects.create(
+            # Usamos update_or_create por nombre_marca para evitar duplicados si se re-envía el mismo formulario,
+            # permitiendo a la vez actualizar los detalles de un emprendimiento si ya existía.
+            Emprendimiento.objects.update_or_create(
                 emprendedor=emprendedor,
                 nombre_marca=emp_data['nombre_marca'],
-                tipo_produccion=emp_data['tipo_produccion'],
-                nivel_emprendimiento=emp_data.get('nivel_emprendimiento', 'idea_inicial'),
-                rubro_id=emp_data.get('rubro_id'),
-                servicio_id=emp_data.get('servicio_id'),
+                defaults={
+                    'descripcion': emp_data.get('descripcion', ''),
+                    'tipo_produccion': emp_data['tipo_produccion'],
+                    'nivel_emprendimiento': emp_data.get('nivel_emprendimiento', 'idea_inicial'),
+                    'rubro_id': emp_data.get('rubro_id'),
+                    'servicio_id': emp_data.get('servicio_id'),
+                }
             )
 
         return emprendedor
@@ -227,6 +267,7 @@ class EmprendedorUpdateSerializer(serializers.Serializer):
                     # Actualizar existente
                     Emprendimiento.objects.filter(id=emp_id).update(
                         nombre_marca=emp_data['nombre_marca'],
+                        descripcion=emp_data['descripcion'],
                         tipo_produccion=emp_data['tipo_produccion'],
                         nivel_emprendimiento=emp_data.get('nivel_emprendimiento', 'idea_inicial'),
                         rubro_id=emp_data.get('rubro_id'),
@@ -237,6 +278,7 @@ class EmprendedorUpdateSerializer(serializers.Serializer):
                     Emprendimiento.objects.create(
                         emprendedor=instance,
                         nombre_marca=emp_data['nombre_marca'],
+                        descripcion=emp_data['descripcion'],
                         tipo_produccion=emp_data['tipo_produccion'],
                         nivel_emprendimiento=emp_data.get('nivel_emprendimiento', 'idea_inicial'),
                         rubro_id=emp_data.get('rubro_id'),

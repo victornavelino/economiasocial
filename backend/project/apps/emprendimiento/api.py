@@ -1,5 +1,5 @@
 from rest_framework import viewsets, permissions
-from usuario.permissions import IsAdminOrOwner, IsAdminUser
+from usuario.permissions import IsAdminOrOwner, IsAdminUser, IsAdminUserOrReadOnly
 
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
@@ -23,7 +23,7 @@ class EmprendimientoViewSet(viewsets.ModelViewSet):
 class RubroViewSet(viewsets.ModelViewSet):
     queryset = Rubro.objects.all()
     serializer_class = RubroSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUserOrReadOnly]
     parser_classes = [JSONParser]
     renderer_classes = [JSONRenderer]
 
@@ -31,6 +31,6 @@ class RubroViewSet(viewsets.ModelViewSet):
 class ServicioViewSet(viewsets.ModelViewSet):
     queryset = Servicio.objects.all()
     serializer_class = ServicioSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUserOrReadOnly]
     parser_classes = [JSONParser]
     renderer_classes = [JSONRenderer]

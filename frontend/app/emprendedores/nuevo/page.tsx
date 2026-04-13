@@ -13,7 +13,7 @@ import {
 import Link from 'next/link';
 import {
   ArrowLeft, Save, Loader2, User, MapPin, FileText,
-  Briefcase, Plus, Trash2, Search,
+  Briefcase, Plus, Trash2, Search, Check, Pencil, X,
 } from 'lucide-react';
 
 // ── Schemas ────────────────────────────────────────────────────────────────
@@ -29,6 +29,7 @@ const emprendimientoSchema = z.object({
   ]).default('idea_inicial'),
   rubro_id: z.any().transform(val => (val === "" || val === null ? null : Number(val))),
   servicio_id: z.any().transform(val => (val === "" || val === null ? null : Number(val))),
+  descripcion: z.string().max(500, 'Máximo 500 caracteres').optional().default(''),
 });
 
 const schema = z.object({
@@ -45,8 +46,8 @@ const schema = z.object({
   email: z.string().email('Email inválido'),
   domicilio: z.string().default(''),
   localidad: z.any().transform(val => (val === "" || val === null ? null : Number(val))),
-  medio_de_pago_id: z.any().transform(val => Number(val)),
-  situacion_fiscal_id: z.any().transform(val => Number(val)),
+  medio_de_pago_id: z.any().transform(val => Number(val)).refine(val => val > 0, { message: 'Debés seleccionar un medio de pago' }),
+  situacion_fiscal_id: z.any().transform(val => Number(val)).refine(val => val > 0, { message: 'Debés seleccionar una situación fiscal' }),
   emprendimientos: z.array(emprendimientoSchema).default([]),
 });
 
@@ -68,6 +69,7 @@ type FormData = {
     nivel_emprendimiento: 'idea_inicial' | 'produccion_pequena_escala' | 'produccion_habilitada' | 'escalamiento_productivo' | 'comercializacion_exportacion';
     rubro_id: number | null;
     servicio_id: number | null;
+    descripcion: string;
   }[];
 };
 
@@ -128,6 +130,19 @@ function Select({ error, children, ...props }: React.SelectHTMLAttributes<HTMLSe
     >
       {children}
     </select>
+  );
+}
+
+function Textarea({ error, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { error?: boolean }) {
+  return (
+    <textarea
+      className={`w-full px-3 py-2.5 rounded-lg border text-sm outline-none transition-all resize-none
+        ${error ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+      onFocus={e => { if (!error) { e.target.style.borderColor = PRIMARY; e.target.style.boxShadow = `0 0 0 2px rgba(26,111,160,0.15)`; } }}
+      onBlur={e => { e.target.style.borderColor = ''; e.target.style.boxShadow = ''; }}
+      rows={3}
+      {...props}
+    />
   );
 }
 
@@ -276,6 +291,9 @@ export default function NuevoEmprendedor() {
   const [servicios, setServicios] = useState<{ id: number; nombre: string }[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const isStaff = (session as any)?.isStaff;
 
   const {
     register,
@@ -294,9 +312,9 @@ export default function NuevoEmprendedor() {
     },
   });
 
-  // Pre-llenado con OIDC
+  // Pre-llenado con datos OIDC — solo para ciudadanos, no para admin
   useEffect(() => {
-    if (session?.userProfile) {
+    if (session?.userProfile && !(session as any).isStaff) {
       const prof = session.userProfile;
       reset((prev) => ({
         ...prev,
@@ -334,15 +352,34 @@ export default function NuevoEmprendedor() {
     console.log(data);
     try {
       await createEmprendedor(data);
-      router.push('/emprendedores');
-      router.refresh();
+      if (isStaff) {
+        router.push('/emprendedores');
+        router.refresh();
+      } else {
+        setSuccessMessage('Datos almacenados correctamente.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     } catch (err: any) {
       const apiErrors = err?.response?.data;
       if (apiErrors && typeof apiErrors === 'object') {
         const messages = Object.entries(apiErrors)
-          .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+          .map(([field, msgs]) => {
+            if (field === 'emprendimientos' && Array.isArray(msgs)) {
+              return msgs.map((item: any, i: number) => {
+                if (typeof item === 'object' && Object.keys(item).length > 0) {
+                  const details = Object.entries(item)
+                    .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+                    .join(', ');
+                  return `Emprendimiento #${i + 1}: ${details}`;
+                }
+                return null;
+              }).filter(Boolean).join('\n');
+            }
+            return `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`;
+          })
+          .filter(Boolean)
           .join('\n');
-        setSubmitError(messages);
+        setSubmitError(messages || 'Error de validación en los datos.');
       } else {
         setSubmitError('Error al guardar. Revisá los datos e intentá nuevamente.');
       }
@@ -356,7 +393,9 @@ export default function NuevoEmprendedor() {
       nivel_emprendimiento: 'idea_inicial',
       rubro_id: null,
       servicio_id: null,
+      descripcion: '',
     });
+    setEditingIndex(fields.length);
   };
 
   return (
@@ -365,13 +404,15 @@ export default function NuevoEmprendedor() {
       {/* Header sticky */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10 lg:static">
         <div className="max-w-3xl mx-auto px-4 py-3 sm:py-4 flex items-center gap-3">
-          <Link
-            href="/emprendedores"
-            className="p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-700"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div className="flex-1 min-w-0">
+          {isStaff && (
+            <Link
+              href="/emprendedores"
+              className="p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-700"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+          )}
+          <div className="flex-1 min-w-0 px-2">
             <p className="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider font-medium truncate">Emprendedores</p>
             <h1 className="text-lg sm:text-xl font-bold text-slate-800 truncate">Nuevo Emprendedor</h1>
           </div>
@@ -379,6 +420,14 @@ export default function NuevoEmprendedor() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-8">
+        {successMessage && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+            <div className="p-1 rounded-full bg-green-500 text-white">
+              <Check className="w-4 h-4" />
+            </div>
+            <p className="text-sm text-green-700 font-bold">{successMessage}</p>
+          </div>
+        )}
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="space-y-6">
 
@@ -526,98 +575,176 @@ export default function NuevoEmprendedor() {
                   </button>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {fields.map((field, index) => (
-                    <div
-                      key={field.id}
-                      className="rounded-lg border border-slate-200 p-4"
-                      style={{ backgroundColor: '#fafbfc' }}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <span
-                          className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: PRIMARY_LIGHT, color: PRIMARY }}
-                        >
-                          Emprendimiento #{index + 1}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => remove(index)}
-                          className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                <div className="space-y-3">
+                  {fields.map((field, index) => {
+                    const isEditing = editingIndex === index;
+                    const nombreMarca = (control as any)._formValues.emprendimientos?.[index]?.nombre_marca || 'Nuevo Emprendimiento';
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="sm:col-span-2">
-                          <Label htmlFor={`emprendimientos.${index}.nombre_marca`} required>
-                            Nombre / Marca
-                          </Label>
-                          <Input
-                            id={`emprendimientos.${index}.nombre_marca`}
-                            {...register(`emprendimientos.${index}.nombre_marca`)}
-                            error={!!errors.emprendimientos?.[index]?.nombre_marca}
-                            placeholder="Ej: La Abuela Repostera"
-                          />
-                          <FieldError message={errors.emprendimientos?.[index]?.nombre_marca?.message} />
-                        </div>
-                        <div>
-                          <Label htmlFor={`emprendimientos.${index}.tipo_produccion`} required>
-                            Tipo de producción
-                          </Label>
-                          <Select
-                            id={`emprendimientos.${index}.tipo_produccion`}
-                            {...register(`emprendimientos.${index}.tipo_produccion`)}
-                            error={!!errors.emprendimientos?.[index]?.tipo_produccion}
-                          >
-                            {TIPOS_PRODUCCION.map((t) => (
-                              <option key={t.value} value={t.value}>{t.label}</option>
-                            ))}
-                          </Select>
-                          <FieldError message={errors.emprendimientos?.[index]?.tipo_produccion?.message} />
-                        </div>
-                        <div>
-                          <Label htmlFor={`emprendimientos.${index}.nivel_emprendimiento`}>
-                            Nivel actual
-                          </Label>
-                          <Select
-                            id={`emprendimientos.${index}.nivel_emprendimiento`}
-                            {...register(`emprendimientos.${index}.nivel_emprendimiento`)}
-                          >
-                            {NIVELES.map((n) => (
-                              <option key={n.value} value={n.value}>{n.label}</option>
-                            ))}
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor={`emprendimientos.${index}.rubro_id`}>Rubro</Label>
-                          <Select
-                            id={`emprendimientos.${index}.rubro_id`}
-                            {...register(`emprendimientos.${index}.rubro_id`)}
-                          >
-                            <option value="">— Sin rubro —</option>
-                            {rubros.map((r) => (
-                              <option key={r.id} value={r.id}>{r.nombre}</option>
-                            ))}
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor={`emprendimientos.${index}.servicio_id`}>Servicio</Label>
-                          <Select
-                            id={`emprendimientos.${index}.servicio_id`}
-                            {...register(`emprendimientos.${index}.servicio_id`)}
-                          >
-                            <option value="">— Sin servicio —</option>
-                            {servicios.map((s) => (
-                              <option key={s.id} value={s.id}>{s.nombre}</option>
-                            ))}
-                          </Select>
-                        </div>
+                    return (
+                      <div
+                        key={field.id}
+                        className={`rounded-xl border transition-all duration-200 ${isEditing ? 'border-amber-200 shadow-md ring-1 ring-amber-100 bg-white' : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50'
+                          }`}
+                      >
+                        {/* Vista de Fila (Lista) */}
+                        {!isEditing ? (
+                          <div className="flex items-center justify-between p-4">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="p-2 rounded-lg bg-white border border-slate-100 shadow-sm shrink-0">
+                                <Briefcase className="w-4 h-4 text-slate-400" />
+                              </div>
+                              <div className="truncate">
+                                <p className="text-sm font-bold text-slate-700 truncate">{nombreMarca}</p>
+                                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                                  #{index + 1} • Sin guardar
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setEditingIndex(index)}
+                                className="p-2 rounded-lg text-slate-400 hover:text-[#1a6fa0] hover:bg-white transition-all shadow-sm hover:shadow active:scale-95"
+                                title="Editar detalles"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm('¿Estás seguro de eliminar este emprendimiento?')) {
+                                    remove(index);
+                                  }
+                                }}
+                                className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-white transition-all shadow-sm hover:shadow active:scale-95"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* Vista de Formulario (Edición) */
+                          <div className="p-5">
+                            <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-100">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                                <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                                  Editando emprendimiento #{index + 1}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setEditingIndex(null)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-white hover:bg-slate-700 transition-colors shadow-sm"
+                              >
+                                <Check className="w-3 h-3" />
+                                Listo
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {/* Nombre de marca */}
+                              <div className="sm:col-span-2">
+                                <Label htmlFor={`emprendimientos.${index}.nombre_marca`} required>Nombre / Marca</Label>
+                                <Input
+                                  id={`emprendimientos.${index}.nombre_marca`}
+                                  {...register(`emprendimientos.${index}.nombre_marca`)}
+                                  error={!!errors.emprendimientos?.[index]?.nombre_marca}
+                                  placeholder="Ej: La Abuela Repostera"
+                                />
+                                <FieldError message={errors.emprendimientos?.[index]?.nombre_marca?.message} />
+                              </div>
+
+                              {/* Tipo de producción */}
+                              <div>
+                                <Label htmlFor={`emprendimientos.${index}.tipo_produccion`} required>Tipo de producción</Label>
+                                <Select
+                                  id={`emprendimientos.${index}.tipo_produccion`}
+                                  {...register(`emprendimientos.${index}.tipo_produccion`)}
+                                  error={!!errors.emprendimientos?.[index]?.tipo_produccion}
+                                >
+                                  {TIPOS_PRODUCCION.map((t) => (
+                                    <option key={t.value} value={t.value}>{t.label}</option>
+                                  ))}
+                                </Select>
+                                <FieldError message={errors.emprendimientos?.[index]?.tipo_produccion?.message} />
+                              </div>
+
+                              {/* Descripción */}
+                              <div className="sm:col-span-2">
+                                <Label htmlFor={`emprendimientos.${index}.descripcion`}>Descripción del emprendimiento</Label>
+                                <Textarea
+                                  id={`emprendimientos.${index}.descripcion`}
+                                  {...register(`emprendimientos.${index}.descripcion`)}
+                                  error={!!errors.emprendimientos?.[index]?.descripcion}
+                                  placeholder="Contanos brevemente de qué se trata, qué producís o qué servicios brindás..."
+                                />
+                                <FieldError message={errors.emprendimientos?.[index]?.descripcion?.message} />
+                              </div>
+
+                              {/* Nivel actual */}
+                              <div>
+                                <Label htmlFor={`emprendimientos.${index}.nivel_emprendimiento`}>Nivel actual</Label>
+                                <Select
+                                  id={`emprendimientos.${index}.nivel_emprendimiento`}
+                                  {...register(`emprendimientos.${index}.nivel_emprendimiento`)}
+                                >
+                                  {NIVELES.map((n) => (
+                                    <option key={n.value} value={n.value}>{n.label}</option>
+                                  ))}
+                                </Select>
+                              </div>
+
+                              {/* Rubro */}
+                              <div>
+                                <Label htmlFor={`emprendimientos.${index}.rubro_id`}>Rubro</Label>
+                                <Select
+                                  id={`emprendimientos.${index}.rubro_id`}
+                                  {...register(`emprendimientos.${index}.rubro_id`)}
+                                >
+                                  <option value="">— Sin rubro —</option>
+                                  {rubros.map((r) => (
+                                    <option key={r.id} value={r.id}>{r.nombre}</option>
+                                  ))}
+                                </Select>
+                              </div>
+
+                              {/* Servicio */}
+                              <div>
+                                <Label htmlFor={`emprendimientos.${index}.servicio_id`}>Servicio</Label>
+                                <Select
+                                  id={`emprendimientos.${index}.servicio_id`}
+                                  {...register(`emprendimientos.${index}.servicio_id`)}
+                                >
+                                  <option value="">— Sin servicio —</option>
+                                  {servicios.map((s) => (
+                                    <option key={s.id} value={s.id}>{s.nombre}</option>
+                                  ))}
+                                </Select>
+                              </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm('¿Deseas eliminar este emprendimiento?')) {
+                                    remove(index);
+                                    setEditingIndex(null);
+                                  }
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg text-xs font-bold transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Eliminar este registro
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -631,14 +758,16 @@ export default function NuevoEmprendedor() {
 
             {/* Acciones */}
             <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2 pb-8">
-              <Link href="/emprendedores" className="w-full sm:w-auto">
-                <button
-                  type="button"
-                  className="w-full px-5 py-3 sm:py-2.5 rounded-xl sm:rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
-                >
-                  Cancelar
-                </button>
-              </Link>
+              {isStaff && (
+                <Link href="/emprendedores" className="w-full sm:w-auto">
+                  <button
+                    type="button"
+                    className="w-full px-5 py-3 sm:py-2.5 rounded-xl sm:rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </Link>
+              )}
               <button
                 type="submit"
                 disabled={isSubmitting}

@@ -41,13 +41,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (isApiAuthRoute) return true
       return isLoggedIn
     },
-    async redirect({ url, baseUrl }) {
-      // Allows relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`
-      // Allows callback URLs on the same origin
-      else if (new URL(url).origin === baseUrl) return url
-      return baseUrl
-    },
     async jwt({ token, account, user }: any) {
       if (account && user) {
         token.accessToken = account.access_token
@@ -67,11 +60,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           })
           if (res.ok) {
             const backendData = await res.json()
-            // JSON API compatibility check
-            const data = backendData.data || backendData
+            // /me/ devuelve JSON plano: { is_staff, persona, ... }
+            // Fallback a JSON:API por compatibilidad: { data: { attributes: { is_staff } } }
+            const attrs = backendData.data?.attributes ?? backendData
             token.backendUser = {
-              isStaff: data.is_staff || false,
-              personaId: data.persona || null
+              isStaff: attrs.is_staff ?? false,
+              personaId: attrs.persona ?? backendData.data?.relationships?.persona?.data?.id ?? null
             }
           }
         } catch (error) {

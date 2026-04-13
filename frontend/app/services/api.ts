@@ -1,7 +1,6 @@
 import axios from 'axios';
-import { getSession } from 'next-auth/react';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000/api/';
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json',
@@ -13,17 +12,22 @@ const api = axios.create({
   headers: JSON_HEADERS,
 });
 
-// Interceptor para inyectar el token de sesión y la API Key
-api.interceptors.request.use(async (config) => {
-  // Inyectar API Key
+// Token almacenado en memoria — se setea desde el componente que tiene la sesión
+// para evitar llamar getSession() (fetch a /api/auth/session) en cada request.
+let _accessToken: string | null = null;
+
+export function setApiToken(token: string | null) {
+  _accessToken = token;
+}
+
+// Interceptor para inyectar el token y la API Key
+api.interceptors.request.use((config) => {
   const apiKey = process.env.NEXT_PUBLIC_API_KEY;
   if (apiKey) {
     config.headers['X-Api-Key'] = apiKey;
   }
-
-  const session: any = await getSession();
-  if (session?.accessToken) {
-    config.headers.Authorization = `Bearer ${session.accessToken}`;
+  if (_accessToken) {
+    config.headers.Authorization = `Bearer ${_accessToken}`;
   }
   return config;
 });

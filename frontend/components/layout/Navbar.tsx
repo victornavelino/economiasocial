@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
@@ -23,7 +23,7 @@ import { getEmprendedores } from '@/app/services/api';
 
 
 const MENU_ITEMS = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/', label: 'Inicio', icon: LayoutDashboard },
   { href: '/emprendedores', label: 'Emprendedores', icon: Users },
   { href: '/emprendimiento', label: 'Emprendimientos', icon: Rocket },
   { href: '/servicio', label: 'Servicios', icon: Scissors },
@@ -41,15 +41,22 @@ export default function Navbar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [citizenLink, setCitizenLink] = useState<string | null>(null);
+  const fetchedRef = useRef(false);
 
-  // Cargar link para ciudadanos si no es staff
+  // Cargar link para ciudadanos si no es staff — solo una vez al autenticarse
   useEffect(() => {
-    if (session && !(session as any).isStaff && status === 'authenticated') {
+    if (
+      status === 'authenticated' &&
+      session &&
+      !(session as any).isStaff &&
+      !fetchedRef.current
+    ) {
+      fetchedRef.current = true;
       getEmprendedores()
         .then((res) => {
           const items = res.data?.results ?? res.data ?? [];
           if (items.length > 0) {
-            setCitizenLink(`/emprendedores/${items[0].id}/editar`);
+            setCitizenLink(`/emprendedores/${items[0].emprendedor_id}/editar`);
           } else {
             setCitizenLink('/emprendedores/nuevo');
           }
@@ -58,6 +65,11 @@ export default function Navbar() {
           setCitizenLink('/emprendedores/nuevo');
         });
     }
+    // Reset ref on logout
+    if (status === 'unauthenticated') {
+      fetchedRef.current = false;
+      setCitizenLink(null);
+    }
   }, [session, status]);
 
   const isAdmin = (session as any)?.isStaff;
@@ -65,7 +77,10 @@ export default function Navbar() {
   const visibleMenuItems = isAdmin
     ? MENU_ITEMS
     : citizenLink
-      ? [{ href: citizenLink, label: 'Mi Inscripción', icon: Users }]
+      ? [
+        { href: '/', label: 'Inicio', icon: LayoutDashboard },
+        { href: citizenLink, label: 'Mi Inscripción', icon: Users }
+      ]
       : [];
 
 

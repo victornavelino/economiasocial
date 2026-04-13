@@ -260,9 +260,23 @@ LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/'    
 
 OIDC_VERIFY_SSL = False
-
 OIDC_RP_SIGN_ALGO = 'RS256'
 SESSION_SAVE_EVERY_REQUEST = True
+
+# Cachear la verificación del token OIDC para no llamar al servidor OIDC en cada request.
+# El backend de DRF valida el Bearer token contra /userinfo; con caché evitamos
+# el flood de requests y el InsecureRequestWarning en cada hit a la API.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'TIMEOUT': 300,  # 5 minutos
+    }
+}
+# mozilla_django_oidc usará el caché de Django para almacenar los claims del token
+OIDC_CACHE_ACCESS_TOKENS = True
+# Suprimir warnings de SSL en desarrollo (el servidor OIDC usa cert no verificable)
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 LOGGING = {
     'version': 1,
@@ -275,7 +289,7 @@ LOGGING = {
     'loggers': {
         'mozilla_django_oidc': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'WARNING',  # era DEBUG, reducir verbosidad
         },
     },
 }

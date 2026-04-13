@@ -25,3 +25,15 @@ class IsAdminUser(permissions.BasePermission):
     """
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_staff)
+
+class IsAdminUserOrReadOnly(permissions.BasePermission):
+    """
+    Permite lectura a cualquier usuario autenticado.
+    Permite escritura/borrado solo a administradores.
+    """
+    def has_permission(self, request, view):
+        # Permitir lectura (GET, HEAD, OPTIONS) a cualquier usuario autenticado
+        if request.method in permissions.SAFE_METHODS:
+            return bool(request.user and request.user.is_authenticated)
+        # Para el resto (POST, PUT, DELETE), solo staff
+        return bool(request.user and request.user.is_staff)

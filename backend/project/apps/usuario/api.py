@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import permissions, generics, viewsets, mixins, status
 from rest_framework.decorators import action
 from rest_framework.parsers import JSONParser
+from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 
 from persona.models import Persona
@@ -70,10 +71,10 @@ class UsuarioViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewset
         serializer.save()
         return Response(status=status.HTTP_200_OK)
 
-    @action(methods=['get'], detail=False)
+    @action(methods=['get'], detail=False, renderer_classes=[JSONRenderer])
     def me(self, request):
         """
-        Devuelve el perfil del usuario autenticado.
+        Devuelve el perfil del usuario autenticado (JSON plano, sin envelope JSON:API).
         """
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)

@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status, permissions
-from usuario.permissions import IsAdminOrOwner, IsAdminUser
+from usuario.permissions import IsAdminOrOwner, IsAdminUser, IsAdminUserOrReadOnly
 
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
@@ -60,7 +60,7 @@ class EmprendedorViewSet(viewsets.ModelViewSet):
 class SituacionFiscalViewSet(viewsets.ModelViewSet):
     queryset = SituacionFiscal.objects.all()
     serializer_class = SituacionFiscalSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUserOrReadOnly]
     parser_classes = [JSONParser]
     renderer_classes = [JSONRenderer]
 
@@ -68,6 +68,6 @@ class SituacionFiscalViewSet(viewsets.ModelViewSet):
 class MedioDePagoViewSet(viewsets.ModelViewSet):
     queryset = MedioDePago.objects.all()
     serializer_class = MedioDePagoSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUserOrReadOnly]
     parser_classes = [JSONParser]
     renderer_classes = [JSONRenderer]
