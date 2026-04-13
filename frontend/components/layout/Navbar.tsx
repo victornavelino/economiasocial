@@ -116,18 +116,8 @@ export default function Navbar() {
   };
 
   const handleLogout = async () => {
-    const idToken = (session as any)?.idToken;
-    // Cerrar sesión localmente sin redirección automática
-    await signOut({ redirect: false });
-
-    if (idToken) {
-      // Redirigir al endpoint de cierre de sesión de Mi Catamarca
-      const endSessionUrl = "https://develop-api-mi.catamarca.gob.ar/openid/end-session";
-      const postLogoutRedirectUri = encodeURIComponent(window.location.origin);
-      window.location.href = `${endSessionUrl}?id_token_hint=${idToken}&post_logout_redirect_uri=${postLogoutRedirectUri}`;
-    } else {
-      window.location.href = "/";
-    }
+    // Cerrar sesión localmente y redirigir al inicio sin afectar la sesión de MICA
+    await signOut({ callbackUrl: '/' });
   };
 
   const sidebarContent = (

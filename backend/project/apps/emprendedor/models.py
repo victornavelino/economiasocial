@@ -42,6 +42,7 @@ class Emprendedor(models.Model):
 
     def __str__(self):
         return self.persona.obtener_nombre_completo()
+
     
     
 

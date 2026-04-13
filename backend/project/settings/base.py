@@ -244,11 +244,14 @@ OIDC_OP_TOKEN_ENDPOINT = "https://develop-api-mi.catamarca.gob.ar/openid/token"
 OIDC_OP_USER_ENDPOINT = "https://develop-api-mi.catamarca.gob.ar/openid/userinfo"
 OIDC_OP_JWKS_ENDPOINT = 'https://develop-api-mi.catamarca.gob.ar/openid/jwks'
 # Opcional: para logout
-OIDC_OP_LOGOUT_ENDPOINT = "https://develop-api-mi.catamarca.gob.ar/openid/end-session"
+# OIDC_OP_LOGOUT_ENDPOINT = "https://develop-api-mi.catamarca.gob.ar/openid/end-session"
 
 
 # scopes 
 OIDC_RP_SCOPES = 'openid email profile'
+
+# Forzar login en el proveedor
+OIDC_AUTH_REQUEST_EXTRA_PARAMS = {'prompt': 'login'}
 
 # 6. Creación automática de usuarios
 OIDC_CREATE_USER = True 

@@ -13,7 +13,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.AUTH_MICATAMARCA_SECRET,
       authorization: {
         url: "https://develop-api-mi.catamarca.gob.ar/openid/authorize",
-        params: { scope: "openid email profile" },
+        params: { 
+          scope: "openid email profile",
+          prompt: "login"
+        },
       },
       token: "https://develop-api-mi.catamarca.gob.ar/openid/token",
       userinfo: "https://develop-api-mi.catamarca.gob.ar/openid/userinfo",
