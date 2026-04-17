@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Emprendimiento, Rubro, Servicio
+from .models import Emprendimiento, Rubro, Servicio, Documento, ModalidadDeTrabajo
 
 class EmprendimientoSerializer(serializers.ModelSerializer):
     rubro_nombre = serializers.CharField(source='rubro.nombre', read_only=True)
@@ -14,6 +14,15 @@ class EmprendimientoSerializer(serializers.ModelSerializer):
         model = Emprendimiento
         fields = '__all__'
 
+class DocumentoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Documento
+        fields = '__all__'
+
+class ModalidadDeTrabajoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ModalidadDeTrabajo
+        fields = '__all__'
 
 class EmprendimientoCreateSerializer(serializers.Serializer):
     id = serializers.IntegerField(required=False, allow_null=True)

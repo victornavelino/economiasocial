@@ -3,8 +3,8 @@ from usuario.permissions import IsAdminOrOwner, IsAdminUser, IsAdminUserOrReadOn
 
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
-from .models import Emprendimiento, Rubro, Servicio
-from .serializers import EmprendimientoSerializer, RubroSerializer, ServicioSerializer
+from .models import Emprendimiento, Rubro, Servicio, Documento, ModalidadDeTrabajo
+from .serializers import EmprendimientoSerializer, RubroSerializer, ServicioSerializer, DocumentoSerializer, ModalidadDeTrabajoSerializer
 
 class EmprendimientoViewSet(viewsets.ModelViewSet):
     queryset = Emprendimiento.objects.all()
@@ -27,6 +27,19 @@ class RubroViewSet(viewsets.ModelViewSet):
     parser_classes = [JSONParser]
     renderer_classes = [JSONRenderer]
 
+class DocumentoViewSet(viewsets.ModelViewSet):
+    queryset = Documento.objects.all()
+    serializer_class = DocumentoSerializer
+    permission_classes = [IsAdminUserOrReadOnly]
+    parser_classes = [JSONParser]
+    renderer_classes = [JSONRenderer]
+
+class ModalidadDeTrabajoViewSet(viewsets.ModelViewSet):
+    queryset = ModalidadDeTrabajo.objects.all()
+    serializer_class = ModalidadDeTrabajoSerializer
+    permission_classes = [IsAdminUserOrReadOnly]
+    parser_classes = [JSONParser]
+    renderer_classes = [JSONRenderer]
 
 class ServicioViewSet(viewsets.ModelViewSet):
     queryset = Servicio.objects.all()
