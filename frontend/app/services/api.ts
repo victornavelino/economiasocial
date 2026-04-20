@@ -39,9 +39,23 @@ export const getEmprendedor = (id: number) => api.get(`/emprendedor/${id}/`);
 
 export const deleteEmprendedor = (id: number) => api.delete(`/emprendedor/${id}/`);
 
-export const createEmprendedor = (data: unknown) => api.post('/emprendedor/', data);
+export const createEmprendedor = (data: unknown) => {
+  if (data instanceof FormData) {
+    return api.post('/emprendedor/', data, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  }
+  return api.post('/emprendedor/', data);
+};
 
-export const updateEmprendedor = (id: number, data: unknown) => api.patch(`/emprendedor/${id}/`, data);
+export const updateEmprendedor = (id: number, data: unknown) => {
+  if (data instanceof FormData) {
+    return api.patch(`/emprendedor/${id}/`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  }
+  return api.patch(`/emprendedor/${id}/`, data);
+};
 
 
 export const getEmprendimientos = () => api.get('/emprendimiento/');

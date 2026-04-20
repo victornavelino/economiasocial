@@ -15,6 +15,7 @@ import Link from 'next/link';
 import {
   ArrowLeft, Save, Loader2, User, MapPin, FileText,
   Briefcase, Plus, Trash2, AlertCircle, Search, Check, Pencil, X,
+  Paperclip, FileUp,
 } from 'lucide-react';
 
 // ── Schemas ────────────────────────────────────────────────────────────────
@@ -34,6 +35,11 @@ const emprendimientoSchema = z.object({
   rubro_id: z.preprocess((val) => (val === "" || val === null ? null : Number(val)), z.number().nullable()),
   servicio_id: z.preprocess((val) => (val === "" || val === null ? null : Number(val)), z.number().nullable()),
   descripcion: z.string().max(500, 'Máximo 500 caracteres').optional().default(''),
+  documentos: z.array(z.object({
+    id: z.number().optional(),
+    nombre: z.string().min(1, 'El nombre es obligatorio'),
+    archivo: z.any().optional(),
+  })).default([]),
 });
 
 const schema = z.object({
@@ -320,6 +326,75 @@ function LocalidadCombobox({
   );
 }
 
+function DocumentosSection({ nestIndex, control, register, errors }: { nestIndex: number, control: any, register: any, errors: any }) {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: `emprendimientos.${nestIndex}.documentos`
+  });
+
+  return (
+    <div className="sm:col-span-2 mt-4 pt-4 border-t border-slate-100">
+      <div className="flex items-center justify-between mb-3">
+        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+          <Paperclip className="w-3.5 h-3.5" />
+          Documentos (Opcional)
+        </label>
+        <button
+          type="button"
+          onClick={() => append({ nombre: '', archivo: null })}
+          className="text-[10px] font-bold text-[#1a6fa0] bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors flex items-center gap-1"
+        >
+          <Plus className="w-3 h-3" /> Agregar
+        </button>
+      </div>
+
+      {fields.length === 0 && (
+        <p className="text-[11px] text-slate-400 italic">No hay documentos adjuntos para este emprendimiento.</p>
+      )}
+
+      <div className="space-y-3">
+        {fields.map((field, index) => (
+          <div key={field.id} className="group flex flex-col sm:flex-row gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200 transition-all hover:border-slate-300">
+            <div className="flex-[2]">
+              <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Nombre del archivo</label>
+              <Input
+                placeholder="Ej: Constancia de Inscripción"
+                {...register(`emprendimientos.${nestIndex}.documentos.${index}.nombre`)}
+                className="bg-white"
+              />
+            </div>
+            <div className="flex-[3]">
+              <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Archivo</label>
+              <div className="relative">
+                <input
+                  type="file"
+                  {...register(`emprendimientos.${nestIndex}.documentos.${index}.archivo`)}
+                  className="w-full text-xs text-slate-500
+                    file:mr-3 file:py-1.5 file:px-3
+                    file:rounded-md file:border-0
+                    file:text-[10px] file:font-bold
+                    file:bg-slate-200 file:text-slate-700
+                    hover:file:bg-slate-300 file:cursor-pointer"
+                />
+              </div>
+            </div>
+            <div className="flex items-end justify-end">
+              <button
+                type="button"
+                onClick={() => remove(index)}
+                className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                title="Eliminar documento"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Página principal ────────────────────────────────────────────────────────
 export default function EditarEmprendedor() {
   const router = useRouter();
@@ -410,6 +485,11 @@ export default function EditarEmprendedor() {
             nivel_emprendimiento: emp.nivel_emprendimiento ?? 'idea_inicial',
             rubro_id: emp.rubro ?? null,
             servicio_id: emp.servicio ?? null,
+            documentos: (emp.documentos ?? []).map((doc: any) => ({
+              id: doc.id,
+              nombre: doc.nombre ?? '',
+              archivo: null, // No podemos precargar el archivo File de una URL
+            })),
           })),
         });
       })
@@ -420,7 +500,25 @@ export default function EditarEmprendedor() {
   const onSubmit = async (data: FormData) => {
     setSubmitError(null);
     try {
-      await updateEmprendedor(id, data);
+      const formData = new FormData();
+      const payload = {
+        ...data,
+        emprendimientos: data.emprendimientos.map(emp => ({
+          ...emp,
+          documentos: emp.documentos.map(doc => ({ id: doc.id, nombre: doc.nombre }))
+        }))
+      };
+      formData.append('data', JSON.stringify(payload));
+
+      data.emprendimientos.forEach((emp, empIdx) => {
+        emp.documentos.forEach((doc, docIdx) => {
+          if (doc.archivo && doc.archivo.length > 0) {
+            formData.append(`file_${empIdx}_${docIdx}`, doc.archivo[0]);
+          }
+        });
+      });
+
+      await updateEmprendedor(id, formData);
       if (isStaff) {
         router.push('/emprendedores');
         router.refresh();
@@ -463,6 +561,7 @@ export default function EditarEmprendedor() {
       rubro_id: null,
       servicio_id: null,
       descripcion: '',
+      documentos: [],
     });
     setEditingIndex(fields.length); // Abrir el nuevo automáticamente
   };
@@ -898,6 +997,14 @@ export default function EditarEmprendedor() {
                                   ))}
                                 </Select>
                               </div>
+
+                              {/* Documentos */}
+                              <DocumentosSection
+                                nestIndex={index}
+                                control={control}
+                                register={register}
+                                errors={errors}
+                              />
                             </div>
 
                             <div className="mt-6 flex justify-end">

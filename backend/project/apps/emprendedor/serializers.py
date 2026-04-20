@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from emprendimiento.serializers import EmprendimientoCreateSerializer, EmprendimientoNestedSerializer
 from persona.models import Persona
-from emprendimiento.models import Emprendimiento
+from emprendimiento.models import Emprendimiento, Documento
 from .models import Emprendedor, SituacionFiscal, MedioDePago
 
 
@@ -152,9 +152,10 @@ class EmprendedorCreateSerializer(serializers.Serializer):
             emprendedor.save()
 
         for emp_data in emprendimientos_data:
+            documentos_data = emp_data.pop('documentos', [])
             # Usamos update_or_create por nombre_marca para evitar duplicados si se re-envía el mismo formulario,
             # permitiendo a la vez actualizar los detalles de un emprendimiento si ya existía.
-            Emprendimiento.objects.update_or_create(
+            emprendimiento, _ = Emprendimiento.objects.update_or_create(
                 emprendedor=emprendedor,
                 nombre_marca=emp_data['nombre_marca'],
                 defaults={
@@ -165,6 +166,9 @@ class EmprendedorCreateSerializer(serializers.Serializer):
                     'servicio_id': emp_data.get('servicio_id'),
                 }
             )
+            for doc_data in documentos_data:
+                doc_data.pop('id', None)
+                Documento.objects.create(emprendimiento=emprendimiento, **doc_data)
 
         return emprendedor
 
@@ -265,6 +269,7 @@ class EmprendedorUpdateSerializer(serializers.Serializer):
                 emp_id = emp_data.get('id')
                 if emp_id and emp_id in existing_ids:
                     # Actualizar existente
+                    documentos_data = emp_data.pop('documentos', [])
                     Emprendimiento.objects.filter(id=emp_id).update(
                         nombre_marca=emp_data['nombre_marca'],
                         descripcion=emp_data['descripcion'],
@@ -273,9 +278,22 @@ class EmprendedorUpdateSerializer(serializers.Serializer):
                         rubro_id=emp_data.get('rubro_id'),
                         servicio_id=emp_data.get('servicio_id'),
                     )
+                    emprendimiento = Emprendimiento.objects.get(id=emp_id)
+                    
+                    # Sincronizar documentos
+                    incoming_doc_ids = [d['id'] for d in documentos_data if d.get('id')]
+                    emprendimiento.documentos.exclude(id__in=incoming_doc_ids).delete()
+                    
+                    for doc_data in documentos_data:
+                        doc_id = doc_data.pop('id', None)
+                        if doc_id:
+                            Documento.objects.filter(id=doc_id).update(nombre=doc_data['nombre'])
+                        else:
+                            Documento.objects.create(emprendimiento=emprendimiento, **doc_data)
                 else:
                     # Crear nuevo
-                    Emprendimiento.objects.create(
+                    documentos_data = emp_data.pop('documentos', [])
+                    emprendimiento = Emprendimiento.objects.create(
                         emprendedor=instance,
                         nombre_marca=emp_data['nombre_marca'],
                         descripcion=emp_data['descripcion'],
@@ -284,6 +302,9 @@ class EmprendedorUpdateSerializer(serializers.Serializer):
                         rubro_id=emp_data.get('rubro_id'),
                         servicio_id=emp_data.get('servicio_id'),
                     )
+                    for doc_data in documentos_data:
+                        doc_data.pop('id', None)
+                        Documento.objects.create(emprendimiento=emprendimiento, **doc_data)
 
         return instance
 

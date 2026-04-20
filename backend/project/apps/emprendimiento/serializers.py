@@ -17,7 +17,7 @@ class EmprendimientoSerializer(serializers.ModelSerializer):
 class DocumentoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Documento
-        fields = '__all__'
+        fields = ['id', 'nombre', 'archivo']
 
 class ModalidadDeTrabajoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,6 +45,7 @@ class EmprendimientoCreateSerializer(serializers.Serializer):
     )
     rubro_id = serializers.IntegerField(required=False, allow_null=True)
     servicio_id = serializers.IntegerField(required=False, allow_null=True)
+    documentos = DocumentoSerializer(many=True, required=False, default=list)
 
 
 class EmprendimientoNestedSerializer(serializers.ModelSerializer):
