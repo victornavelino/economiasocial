@@ -80,6 +80,7 @@ THIRD_PARTY_APPS = [
     'rest_framework_social_oauth2',
     'django_better_admin_arrayfield',
     'mozilla_django_oidc',
+    'storages',
 ]
 
 PROJECT_APPS = [
@@ -296,3 +297,4 @@ LOGGING = {
         },
     },
 }
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
