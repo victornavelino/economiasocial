@@ -297,4 +297,37 @@ LOGGING = {
         },
     },
 }
+
+# Usar storage de S3 (compatible con MinIO)
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+# Credenciales de MinIO (las que usaste en docker run)
+MINIO_ACCESS_KEY = 'minioadmin'
+MINIO_SECRET_KEY = 'minioadmin'
+
+# Configuración AWS/S3
+#AWS_ACCESS_KEY_ID = MINIO_ACCESS_KEY
+##AWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY
+#AWS_STORAGE_BUCKET_NAME = 'economiasocial'  # El bucket que creaste
+# Alternativa
+AWS_ACCESS_KEY_ID = env.str('MINIO_ACCESS_KEY', 'minioadmin')
+AWS_SECRET_ACCESS_KEY = env.str('MINIO_SECRET_KEY', 'minioadmin')
+AWS_STORAGE_BUCKET_NAME = env.str('MINIO_BUCKET_NAME', 'economiasocial')
+
+
+AWS_S3_ENDPOINT_URL = 'http://localhost:9000'
+
+# Configuraciones para MinIO (local, sin SSL)
+AWS_S3_USE_SSL = False
+AWS_S3_VERIFY = False
+AWS_S3_REGION_NAME = 'us-east-1'  # MinIO no lo usa, pero es requerido
+
+# Configuración de URLs y permisos
+AWS_DEFAULT_ACL = 'private'  # Archivos privados por defecto
+AWS_QUERYSTRING_AUTH = True  # URLs firmadas (recomendado para desarrollo)
+AWS_QUERYSTRING_EXPIRE = 3600  # Expiración de URLs firmadas en segundos (1 hora)
+
+# Opcional: si quieres organizar mejor los archivos, puedes definir:
+AWS_LOCATION = 'documentos'  # Esto creará una subcarpeta dentro del bucket
+# Si usas AWS_LOCATION, el upload_to del modelo se concatenará automáticamente
+
