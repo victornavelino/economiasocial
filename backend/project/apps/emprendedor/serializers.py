@@ -2,7 +2,7 @@ from rest_framework import serializers
 from emprendimiento.serializers import EmprendimientoCreateSerializer, EmprendimientoNestedSerializer
 from persona.models import Persona
 from emprendimiento.models import Emprendimiento, Documento
-from .models import Emprendedor, SituacionFiscal, MedioDePago
+from .models import Emprendedor, SituacionFiscal, MedioDePago, ManipulaAlimentos
 
 
 class EmprendedorSerializer(serializers.ModelSerializer):
@@ -25,6 +25,14 @@ class EmprendedorSerializer(serializers.ModelSerializer):
     situacion_fiscal_id = serializers.IntegerField(source='situacion_fiscal.pk', read_only=True)
     situacion_fiscal_nombre = serializers.CharField(source='situacion_fiscal.nombre', read_only=True)
     emprendimientos = EmprendimientoNestedSerializer(many=True, read_only=True)
+    # Campos nuevos
+    participa_mercado_itinerante = serializers.BooleanField(read_only=True)
+    participa_ferias = serializers.BooleanField(read_only=True)
+    manipula_alimentos_id = serializers.IntegerField(source='manipula_alimentos.pk', read_only=True, allow_null=True)
+    numero_carnet = serializers.CharField(source='manipula_alimentos.numero_carnet', read_only=True, allow_null=True)
+    vencimiento_carnet = serializers.DateField(source='manipula_alimentos.vencimiento_carnet', read_only=True, allow_null=True)
+    numero_habilitacion_bromatologica = serializers.CharField(source='manipula_alimentos.numero_habilitacion_bromatologica', read_only=True, allow_null=True)
+    vencimiento_habilitacion_bromatologica = serializers.DateField(source='manipula_alimentos.vencimiento_habilitacion_bromatologica', read_only=True, allow_null=True)
 
     def get_localidad_nombre(self, obj):
         if obj.persona.localidad:
@@ -40,6 +48,9 @@ class EmprendedorSerializer(serializers.ModelSerializer):
             'sexo', 'email', 'cuit', 'medio_de_pago_id',
             'medio_de_pago_nombre', 'situacion_fiscal_id', 'situacion_fiscal_nombre',
             'emprendimientos',
+            'participa_mercado_itinerante', 'participa_ferias',
+            'manipula_alimentos_id', 'numero_carnet', 'vencimiento_carnet',
+            'numero_habilitacion_bromatologica', 'vencimiento_habilitacion_bromatologica',
         ]
 
 
@@ -62,6 +73,14 @@ class EmprendedorCreateSerializer(serializers.Serializer):
     email = serializers.EmailField()
     medio_de_pago_id = serializers.IntegerField()
     situacion_fiscal_id = serializers.IntegerField()
+    participa_mercado_itinerante = serializers.BooleanField(required=False, default=False)
+    participa_ferias = serializers.BooleanField(required=False, default=False)
+
+    # Datos de ManipulaAlimentos (todos opcionales)
+    numero_carnet = serializers.CharField(max_length=20, required=False, allow_null=True, allow_blank=True)
+    vencimiento_carnet = serializers.DateField(required=False, allow_null=True)
+    numero_habilitacion_bromatologica = serializers.CharField(max_length=20, required=False, allow_null=True, allow_blank=True)
+    vencimiento_habilitacion_bromatologica = serializers.DateField(required=False, allow_null=True)
 
     # Emprendimientos anidados (opcional, puede ser lista vacía)
     emprendimientos = EmprendimientoCreateSerializer(many=True, required=False, default=list)
@@ -104,6 +123,15 @@ class EmprendedorCreateSerializer(serializers.Serializer):
     def create(self, validated_data):
         emprendimientos_data = validated_data.pop('emprendimientos', [])
 
+        # Extraer datos de ManipulaAlimentos
+        manipula_data = {
+            'numero_carnet': validated_data.pop('numero_carnet', None),
+            'vencimiento_carnet': validated_data.pop('vencimiento_carnet', None),
+            'numero_habilitacion_bromatologica': validated_data.pop('numero_habilitacion_bromatologica', None),
+            'vencimiento_habilitacion_bromatologica': validated_data.pop('vencimiento_habilitacion_bromatologica', None),
+        }
+        manipula_alimentos = ManipulaAlimentos.objects.create(**manipula_data)
+
         # Usamos get_or_create para no fallar si la Persona ya existe (ej: creada por login OIDC)
         # Solo actualizamos los campos que vienen en el formulario
         persona_defaults = {
@@ -141,6 +169,9 @@ class EmprendedorCreateSerializer(serializers.Serializer):
                 'email': validated_data['email'],
                 'medio_de_pago_id': validated_data['medio_de_pago_id'],
                 'situacion_fiscal_id': validated_data['situacion_fiscal_id'],
+                'participa_mercado_itinerante': validated_data.get('participa_mercado_itinerante', False),
+                'participa_ferias': validated_data.get('participa_ferias', False),
+                'manipula_alimentos': manipula_alimentos,
             }
         )
 
@@ -149,6 +180,15 @@ class EmprendedorCreateSerializer(serializers.Serializer):
             emprendedor.email = validated_data['email']
             emprendedor.medio_de_pago_id = validated_data['medio_de_pago_id']
             emprendedor.situacion_fiscal_id = validated_data['situacion_fiscal_id']
+            emprendedor.participa_mercado_itinerante = validated_data.get('participa_mercado_itinerante', False)
+            emprendedor.participa_ferias = validated_data.get('participa_ferias', False)
+            # Actualizar datos de manipula_alimentos del emprendedor existente
+            existing_ma = emprendedor.manipula_alimentos
+            for attr, val in manipula_data.items():
+                setattr(existing_ma, attr, val)
+            existing_ma.save()
+            # Eliminar el nuevo ManipulaAlimentos que creamos (ya no lo necesitamos)
+            manipula_alimentos.delete()
             emprendedor.save()
 
         for emp_data in emprendimientos_data:
@@ -194,6 +234,15 @@ class EmprendedorUpdateSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False)
     medio_de_pago_id = serializers.IntegerField(required=False)
     situacion_fiscal_id = serializers.IntegerField(required=False)
+    participa_mercado_itinerante = serializers.BooleanField(required=False)
+    participa_ferias = serializers.BooleanField(required=False)
+
+    # Datos de ManipulaAlimentos (todos opcionales)
+    numero_carnet = serializers.CharField(max_length=20, required=False, allow_null=True, allow_blank=True)
+    vencimiento_carnet = serializers.DateField(required=False, allow_null=True)
+    numero_habilitacion_bromatologica = serializers.CharField(max_length=20, required=False, allow_null=True, allow_blank=True)
+    vencimiento_habilitacion_bromatologica = serializers.DateField(required=False, allow_null=True)
+
     emprendimientos = EmprendimientoCreateSerializer(many=True, required=False)
 
     def validate_documento_identidad(self, value):
@@ -247,10 +296,27 @@ class EmprendedorUpdateSerializer(serializers.Serializer):
                 setattr(persona, attr, value)
         persona.save()
 
+        # Extraer y actualizar ManipulaAlimentos si se proveen campos
+        manipula_fields = ['numero_carnet', 'vencimiento_carnet', 'numero_habilitacion_bromatologica', 'vencimiento_habilitacion_bromatologica']
+        manipula_updates = {}
+        for field in manipula_fields:
+            if field in validated_data:
+                manipula_updates[field] = validated_data.pop(field)
+        if manipula_updates:
+            ma = instance.manipula_alimentos
+            for attr, val in manipula_updates.items():
+                setattr(ma, attr, val)
+            ma.save()
+
         # Actualizar emprendedor
+        skip_fields = {'emprendimientos'} | set(manipula_fields)
         for attr, value in validated_data.items():
-            if attr != 'emprendimientos' and value is not None:
+            if attr not in skip_fields and value is not None:
                 setattr(instance, attr, value)
+        # Booleanos: actualizar aunque sean False
+        for bool_field in ['participa_mercado_itinerante', 'participa_ferias']:
+            if bool_field in validated_data:
+                setattr(instance, bool_field, validated_data[bool_field])
         instance.save()
 
         # Actualizar emprendimientos anidados

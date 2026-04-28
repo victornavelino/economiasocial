@@ -50,6 +50,12 @@ const schema = z.object({
     localidad: z.preprocess((val) => (val === "" || val === null ? null : Number(val)), z.number().nullable()).default(null),
     medio_de_pago_id: z.preprocess((val) => Number(val), z.number().min(1, 'Seleccioná un medio de pago')),
     situacion_fiscal_id: z.preprocess((val) => Number(val), z.number().min(1, 'Seleccioná una situación fiscal')),
+    participa_mercado_itinerante: z.boolean().default(false),
+    participa_ferias: z.boolean().default(false),
+    numero_carnet: z.string().nullable().default(''),
+    vencimiento_carnet: z.string().nullable().default(''),
+    numero_habilitacion_bromatologica: z.string().nullable().default(''),
+    vencimiento_habilitacion_bromatologica: z.string().nullable().default(''),
     emprendimientos: z.array(emprendimientoSchema).default([]),
 });
 
@@ -372,6 +378,12 @@ export default function EditarEmprendedor() {
                     localidad: d.localidad_id ?? null,
                     medio_de_pago_id: d.medio_de_pago_id ?? 0,
                     situacion_fiscal_id: d.situacion_fiscal_id ?? 0,
+                    participa_mercado_itinerante: d.participa_mercado_itinerante ?? false,
+                    participa_ferias: d.participa_ferias ?? false,
+                    numero_carnet: d.numero_carnet ?? '',
+                    vencimiento_carnet: d.vencimiento_carnet ?? '',
+                    numero_habilitacion_bromatologica: d.numero_habilitacion_bromatologica ?? '',
+                    vencimiento_habilitacion_bromatologica: d.vencimiento_habilitacion_bromatologica ?? '',
                     emprendimientos: (d.emprendimientos ?? []).map((emp: any) => ({
                         id: emp.id,
                         nombre_marca: emp.nombre_marca ?? '',
@@ -597,6 +609,72 @@ export default function EditarEmprendedor() {
                                 </div>
                             </div>
                         )}
+                    </div>
+
+                    {/* ── Participación y Alimentos ── */}
+                    <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                        <SectionTitle icon={FileText} title="Participación y Alimentos" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                            <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4">
+                                <div className={`flex items-center gap-3 p-3 rounded-lg border flex-1 ${
+                                    (control as any)._formValues?.participa_mercado_itinerante
+                                        ? 'border-blue-200 bg-blue-50'
+                                        : 'border-slate-200 bg-slate-50'
+                                }`}>
+                                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                                        (control as any)._formValues?.participa_mercado_itinerante
+                                            ? 'bg-[#1a6fa0] border-[#1a6fa0]'
+                                            : 'bg-white border-slate-300'
+                                    }`}>
+                                        {(control as any)._formValues?.participa_mercado_itinerante && (
+                                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-700">Mercado Itinerante</p>
+                                        <p className="text-xs text-slate-400">Participa en mercado itinerante</p>
+                                    </div>
+                                </div>
+                                <div className={`flex items-center gap-3 p-3 rounded-lg border flex-1 ${
+                                    (control as any)._formValues?.participa_ferias
+                                        ? 'border-blue-200 bg-blue-50'
+                                        : 'border-slate-200 bg-slate-50'
+                                }`}>
+                                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                                        (control as any)._formValues?.participa_ferias
+                                            ? 'bg-[#1a6fa0] border-[#1a6fa0]'
+                                            : 'bg-white border-slate-300'
+                                    }`}>
+                                        {(control as any)._formValues?.participa_ferias && (
+                                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-700">Ferias</p>
+                                        <p className="text-xs text-slate-400">Participa en ferias</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <Label htmlFor="numero_carnet">N° de Carnet</Label>
+                                <Input id="numero_carnet" {...register('numero_carnet')} disabled={true} placeholder="—" />
+                            </div>
+                            <div>
+                                <Label htmlFor="vencimiento_carnet">Vencimiento Carnet</Label>
+                                <Input id="vencimiento_carnet" type="date" {...register('vencimiento_carnet')} disabled={true} />
+                            </div>
+                            <div>
+                                <Label htmlFor="numero_habilitacion_bromatologica">N° Hab. Bromatológica</Label>
+                                <Input id="numero_habilitacion_bromatologica" {...register('numero_habilitacion_bromatologica')} disabled={true} placeholder="—" />
+                            </div>
+                            <div>
+                                <Label htmlFor="vencimiento_habilitacion_bromatologica">Vencimiento Hab. Bromatológica</Label>
+                                <Input id="vencimiento_habilitacion_bromatologica" type="date" {...register('vencimiento_habilitacion_bromatologica')} disabled={true} />
+                            </div>
+
+                        </div>
                     </div>
 
                     {/* ── Emprendimientos ── */}

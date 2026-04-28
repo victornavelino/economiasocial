@@ -58,6 +58,12 @@ const schema = z.object({
   localidad: z.preprocess((val) => (val === "" || val === null ? null : Number(val)), z.number().nullable()).default(null),
   medio_de_pago_id: z.preprocess((val) => Number(val), z.number().min(1, 'Seleccioná un medio de pago')),
   situacion_fiscal_id: z.preprocess((val) => Number(val), z.number().min(1, 'Seleccioná una situación fiscal')),
+  participa_mercado_itinerante: z.boolean().default(false),
+  participa_ferias: z.boolean().default(false),
+  numero_carnet: z.string().nullable().default(''),
+  vencimiento_carnet: z.string().nullable().default(''),
+  numero_habilitacion_bromatologica: z.string().nullable().default(''),
+  vencimiento_habilitacion_bromatologica: z.string().nullable().default(''),
   emprendimientos: z.array(emprendimientoSchema).default([]),
 });
 
@@ -429,6 +435,12 @@ export default function EditarEmprendedor() {
       medio_de_pago_id: 0,
       situacion_fiscal_id: 0,
       localidad: null,
+      participa_mercado_itinerante: false,
+      participa_ferias: false,
+      numero_carnet: '',
+      vencimiento_carnet: '',
+      numero_habilitacion_bromatologica: '',
+      vencimiento_habilitacion_bromatologica: '',
       emprendimientos: [],
     },
   });
@@ -478,6 +490,12 @@ export default function EditarEmprendedor() {
           localidad: d.localidad_id ?? null,
           medio_de_pago_id: d.medio_de_pago_id ?? 0,
           situacion_fiscal_id: d.situacion_fiscal_id ?? 0,
+          participa_mercado_itinerante: d.participa_mercado_itinerante ?? false,
+          participa_ferias: d.participa_ferias ?? false,
+          numero_carnet: d.numero_carnet ?? '',
+          vencimiento_carnet: d.vencimiento_carnet ?? '',
+          numero_habilitacion_bromatologica: d.numero_habilitacion_bromatologica ?? '',
+          vencimiento_habilitacion_bromatologica: d.vencimiento_habilitacion_bromatologica ?? '',
           emprendimientos: (d.emprendimientos ?? []).map((emp: any) => ({
             id: emp.id,
             nombre_marca: emp.nombre_marca ?? '',
@@ -485,10 +503,11 @@ export default function EditarEmprendedor() {
             nivel_emprendimiento: emp.nivel_emprendimiento ?? 'idea_inicial',
             rubro_id: emp.rubro ?? null,
             servicio_id: emp.servicio ?? null,
+            descripcion: emp.descripcion ?? '',
             documentos: (emp.documentos ?? []).map((doc: any) => ({
               id: doc.id,
               nombre: doc.nombre ?? '',
-              archivo: null, // No podemos precargar el archivo File de una URL
+              archivo: null,
             })),
           })),
         });
@@ -503,6 +522,10 @@ export default function EditarEmprendedor() {
       const formData = new FormData();
       const payload = {
         ...data,
+        numero_carnet: data.numero_carnet || null,
+        vencimiento_carnet: data.vencimiento_carnet || null,
+        numero_habilitacion_bromatologica: data.numero_habilitacion_bromatologica || null,
+        vencimiento_habilitacion_bromatologica: data.vencimiento_habilitacion_bromatologica || null,
         emprendimientos: data.emprendimientos.map(emp => ({
           ...emp,
           documentos: emp.documentos.map(doc => ({ id: doc.id, nombre: doc.nombre }))
@@ -795,6 +818,60 @@ export default function EditarEmprendedor() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* ── Participación y Alimentos ── */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+              <SectionTitle icon={FileText} title="Participación y Alimentos" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                {/* Checkboxes de participación */}
+                <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4">
+                  <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all flex-1">
+                    <input
+                      type="checkbox"
+                      id="participa_mercado_itinerante"
+                      {...register('participa_mercado_itinerante')}
+                      className="w-4 h-4 rounded accent-[#1a6fa0] cursor-pointer"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700">Mercado Itinerante</p>
+                      <p className="text-xs text-slate-400">Participa en mercado itinerante</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all flex-1">
+                    <input
+                      type="checkbox"
+                      id="participa_ferias"
+                      {...register('participa_ferias')}
+                      className="w-4 h-4 rounded accent-[#1a6fa0] cursor-pointer"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700">Ferias</p>
+                      <p className="text-xs text-slate-400">Participa en ferias</p>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Datos de ManipulaAlimentos */}
+                <div>
+                  <Label htmlFor="numero_carnet">N° de Carnet</Label>
+                  <Input id="numero_carnet" {...register('numero_carnet')} placeholder="Ej: C-12345" />
+                </div>
+                <div>
+                  <Label htmlFor="vencimiento_carnet">Vencimiento Carnet</Label>
+                  <Input id="vencimiento_carnet" type="date" {...register('vencimiento_carnet')} />
+                </div>
+                <div>
+                  <Label htmlFor="numero_habilitacion_bromatologica">N° Hab. Bromatológica</Label>
+                  <Input id="numero_habilitacion_bromatologica" {...register('numero_habilitacion_bromatologica')} placeholder="Ej: HB-98765" />
+                </div>
+                <div>
+                  <Label htmlFor="vencimiento_habilitacion_bromatologica">Vencimiento Hab. Bromatológica</Label>
+                  <Input id="vencimiento_habilitacion_bromatologica" type="date" {...register('vencimiento_habilitacion_bromatologica')} />
+                </div>
+
+              </div>
             </div>
 
             {/* ── Emprendimientos ── */}
