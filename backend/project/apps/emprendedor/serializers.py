@@ -2,7 +2,13 @@ from rest_framework import serializers
 from emprendimiento.serializers import EmprendimientoCreateSerializer, EmprendimientoNestedSerializer
 from persona.models import Persona
 from emprendimiento.models import Emprendimiento, Documento
-from .models import Emprendedor, SituacionFiscal, MedioDePago, ManipulaAlimentos
+from .models import Emprendedor, SituacionFiscal, MedioDePago, ManipulaAlimentos, Documento as DocumentoEmprendedor
+
+
+class DocumentoEmprendedorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentoEmprendedor
+        fields = ['id', 'nombre', 'archivo']
 
 
 class EmprendedorSerializer(serializers.ModelSerializer):
@@ -25,6 +31,7 @@ class EmprendedorSerializer(serializers.ModelSerializer):
     situacion_fiscal_id = serializers.IntegerField(source='situacion_fiscal.pk', read_only=True)
     situacion_fiscal_nombre = serializers.CharField(source='situacion_fiscal.nombre', read_only=True)
     emprendimientos = EmprendimientoNestedSerializer(many=True, read_only=True)
+    documentos = DocumentoEmprendedorSerializer(many=True, read_only=True)
     # Campos nuevos
     participa_mercado_itinerante = serializers.BooleanField(read_only=True)
     participa_ferias = serializers.BooleanField(read_only=True)
@@ -48,6 +55,7 @@ class EmprendedorSerializer(serializers.ModelSerializer):
             'sexo', 'email', 'cuit', 'medio_de_pago_id',
             'medio_de_pago_nombre', 'situacion_fiscal_id', 'situacion_fiscal_nombre',
             'emprendimientos',
+            'documentos',
             'participa_mercado_itinerante', 'participa_ferias',
             'manipula_alimentos_id', 'numero_carnet', 'vencimiento_carnet',
             'numero_habilitacion_bromatologica', 'vencimiento_habilitacion_bromatologica',
@@ -81,6 +89,11 @@ class EmprendedorCreateSerializer(serializers.Serializer):
     vencimiento_carnet = serializers.DateField(required=False, allow_null=True)
     numero_habilitacion_bromatologica = serializers.CharField(max_length=20, required=False, allow_null=True, allow_blank=True)
     vencimiento_habilitacion_bromatologica = serializers.DateField(required=False, allow_null=True)
+
+    # Documentos del emprendedor (opcional)
+    documentos = serializers.ListField(
+        child=serializers.DictField(), required=False, default=list
+    )
 
     # Emprendimientos anidados (opcional, puede ser lista vacía)
     emprendimientos = EmprendimientoCreateSerializer(many=True, required=False, default=list)
@@ -122,6 +135,7 @@ class EmprendedorCreateSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         emprendimientos_data = validated_data.pop('emprendimientos', [])
+        documentos_emprendedor_data = validated_data.pop('documentos', [])
 
         # Extraer datos de ManipulaAlimentos
         manipula_data = {
@@ -191,6 +205,15 @@ class EmprendedorCreateSerializer(serializers.Serializer):
             manipula_alimentos.delete()
             emprendedor.save()
 
+        # Crear documentos del emprendedor
+        for doc_data in documentos_emprendedor_data:
+            doc_data.pop('id', None)
+            archivo = doc_data.pop('archivo', None)
+            doc = DocumentoEmprendedor.objects.create(emprendedor=emprendedor, **doc_data)
+            if archivo:
+                doc.archivo = archivo
+                doc.save()
+
         for emp_data in emprendimientos_data:
             documentos_data = emp_data.pop('documentos', [])
             # Usamos update_or_create por nombre_marca para evitar duplicados si se re-envía el mismo formulario,
@@ -242,6 +265,11 @@ class EmprendedorUpdateSerializer(serializers.Serializer):
     vencimiento_carnet = serializers.DateField(required=False, allow_null=True)
     numero_habilitacion_bromatologica = serializers.CharField(max_length=20, required=False, allow_null=True, allow_blank=True)
     vencimiento_habilitacion_bromatologica = serializers.DateField(required=False, allow_null=True)
+
+    # Documentos del emprendedor (opcional)
+    documentos = serializers.ListField(
+        child=serializers.DictField(), required=False
+    )
 
     emprendimientos = EmprendimientoCreateSerializer(many=True, required=False)
 
@@ -304,9 +332,14 @@ class EmprendedorUpdateSerializer(serializers.Serializer):
                 manipula_updates[field] = validated_data.pop(field)
         if manipula_updates:
             ma = instance.manipula_alimentos
-            for attr, val in manipula_updates.items():
-                setattr(ma, attr, val)
-            ma.save()
+            if ma is None:
+                # El emprendedor no tenía ManipulaAlimentos — lo creamos
+                ma = ManipulaAlimentos.objects.create(**manipula_updates)
+                instance.manipula_alimentos = ma
+            else:
+                for attr, val in manipula_updates.items():
+                    setattr(ma, attr, val)
+                ma.save()
 
         # Actualizar emprendedor
         skip_fields = {'emprendimientos'} | set(manipula_fields)
@@ -318,6 +351,22 @@ class EmprendedorUpdateSerializer(serializers.Serializer):
             if bool_field in validated_data:
                 setattr(instance, bool_field, validated_data[bool_field])
         instance.save()
+
+        # Sincronizar documentos del emprendedor
+        if 'documentos' in validated_data:
+            documentos_data = validated_data.pop('documentos')
+            incoming_doc_ids = [d['id'] for d in documentos_data if d.get('id')]
+            instance.documentos.exclude(id__in=incoming_doc_ids).delete()
+            for doc_data in documentos_data:
+                doc_id = doc_data.pop('id', None)
+                archivo = doc_data.pop('archivo', None)
+                if doc_id:
+                    DocumentoEmprendedor.objects.filter(id=doc_id).update(nombre=doc_data.get('nombre', ''))
+                else:
+                    doc = DocumentoEmprendedor.objects.create(emprendedor=instance, **doc_data)
+                    if archivo:
+                        doc.archivo = archivo
+                        doc.save()
 
         # Actualizar emprendimientos anidados
         if 'emprendimientos' in validated_data:

@@ -61,6 +61,10 @@ const schema = z.object({
   vencimiento_carnet: z.string().default(''),
   numero_habilitacion_bromatologica: z.string().default(''),
   vencimiento_habilitacion_bromatologica: z.string().default(''),
+  documentos: z.array(z.object({
+    nombre: z.string().min(1, 'El nombre del documento es obligatorio'),
+    archivo: z.any().optional(),
+  })).default([]),
   emprendimientos: z.array(emprendimientoSchema).default([]),
 });
 
@@ -82,6 +86,10 @@ type FormData = {
   vencimiento_carnet: string;
   numero_habilitacion_bromatologica: string;
   vencimiento_habilitacion_bromatologica: string;
+  documentos: {
+    nombre: string;
+    archivo?: File;
+  }[];
   emprendimientos: {
     nombre_marca: string;
     tipo_produccion: 'artesanal' | 'semi_industrial' | 'servicio';
@@ -372,6 +380,69 @@ function DocumentosSection({ nestIndex, control, register, errors }: { nestIndex
   );
 }
 
+function DocumentosEmprendedorSection({ control, register, errors }: { control: any, register: any, errors: any }) {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'documentos',
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[11px] text-slate-400 italic">
+          {fields.length === 0 ? 'No hay documentos adjuntos.' : `${fields.length} documento(s) adjunto(s).`}
+        </p>
+        <button
+          type="button"
+          onClick={() => append({ nombre: '', archivo: null })}
+          className="text-[10px] font-bold text-[#1a6fa0] bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors flex items-center gap-1"
+        >
+          <Plus className="w-3 h-3" /> Agregar
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        {fields.map((field, index) => (
+          <div key={field.id} className="flex flex-col sm:flex-row gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200 hover:border-slate-300 transition-all">
+            <div className="flex-[2]">
+              <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Nombre del documento</label>
+              <Input
+                placeholder="Ej: Constancia de inscripción"
+                {...register(`documentos.${index}.nombre`)}
+                error={!!errors.documentos?.[index]?.nombre}
+              />
+              <FieldError message={errors.documentos?.[index]?.nombre?.message} />
+            </div>
+            <div className="flex-[3]">
+              <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Archivo</label>
+              <input
+                type="file"
+                {...register(`documentos.${index}.archivo`)}
+                className="w-full text-xs text-slate-500
+                  file:mr-3 file:py-1.5 file:px-3
+                  file:rounded-md file:border-0
+                  file:text-[10px] file:font-bold
+                  file:bg-slate-200 file:text-slate-700
+                  hover:file:bg-slate-300 file:cursor-pointer"
+              />
+            </div>
+            <div className="flex items-end justify-end">
+              <button
+                type="button"
+                onClick={() => remove(index)}
+                className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                title="Eliminar documento"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Página principal ────────────────────────────────────────────────────────
 export default function NuevoEmprendedor() {
   const router = useRouter();
@@ -405,6 +476,7 @@ export default function NuevoEmprendedor() {
       vencimiento_carnet: '',
       numero_habilitacion_bromatologica: '',
       vencimiento_habilitacion_bromatologica: '',
+      documentos: [],
       emprendimientos: [],
     },
   });
@@ -454,12 +526,20 @@ export default function NuevoEmprendedor() {
         vencimiento_carnet: data.vencimiento_carnet || null,
         numero_habilitacion_bromatologica: data.numero_habilitacion_bromatologica || null,
         vencimiento_habilitacion_bromatologica: data.vencimiento_habilitacion_bromatologica || null,
+        documentos: data.documentos.map(doc => ({ nombre: doc.nombre })),
         emprendimientos: data.emprendimientos.map(emp => ({
           ...emp,
           documentos: emp.documentos.map(doc => ({ nombre: doc.nombre }))
         }))
       };
       formData.append('data', JSON.stringify(payload));
+
+      // Archivos de documentos del emprendedor
+      data.documentos.forEach((doc, docIdx) => {
+        if (doc.archivo && doc.archivo.length > 0) {
+          formData.append(`emp_doc_${docIdx}`, doc.archivo[0]);
+        }
+      });
 
       data.emprendimientos.forEach((emp, empIdx) => {
         emp.documentos.forEach((doc, docIdx) => {
@@ -702,6 +782,16 @@ export default function NuevoEmprendedor() {
                   <Input id="vencimiento_habilitacion_bromatologica" type="date" {...register('vencimiento_habilitacion_bromatologica')} />
                 </div>
               </div>
+            </div>
+
+            {/* ── Documentación del Emprendedor ── */}
+            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm">
+              <SectionTitle icon={FileUp} title="Documentación del Emprendedor" />
+              <DocumentosEmprendedorSection
+                control={control}
+                register={register}
+                errors={errors}
+              />
             </div>
 
             {/* ── Emprendimientos ── */}

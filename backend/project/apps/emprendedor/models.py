@@ -40,6 +40,13 @@ class ManipulaAlimentos(models.Model):
 
     def __str__(self):
         return self.numero_carnet
+
+class Documento(models.Model):
+    nombre = models.CharField(max_length=100, verbose_name="Nombre")
+    archivo = models.FileField(upload_to='documentos_emprendedor/', blank=True, null=True, verbose_name="Archivo")
+    emprendedor = models.ForeignKey('Emprendedor', on_delete=models.CASCADE, related_name="documentos")
+    def __str__(self):
+        return self.nombre
     
 class Emprendedor(models.Model):
     

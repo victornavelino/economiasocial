@@ -23,7 +23,7 @@ class EmprendedorViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Emprendedor.objects.select_related(
             'persona', 'medio_de_pago', 'situacion_fiscal'
-        ).all()
+        ).prefetch_related('documentos').all()
         if self.request.user and self.request.user.is_authenticated and not self.request.user.is_staff:
             return qs.filter(persona=self.request.user.persona)
         return qs
@@ -40,7 +40,7 @@ class EmprendedorViewSet(viewsets.ModelViewSet):
         if 'data' in request.data:
             try:
                 data = json.loads(request.data['data'])
-                # Match files to the data structure
+                # Match files to emprendimiento documents: key = file_{emp_idx}_{doc_idx}
                 for key, file in request.FILES.items():
                     if key.startswith('file_'):
                         parts = key.split('_')
@@ -51,6 +51,13 @@ class EmprendedorViewSet(viewsets.ModelViewSet):
                                 emp = data['emprendimientos'][emp_idx]
                                 if 'documentos' in emp and doc_idx < len(emp['documentos']):
                                     emp['documentos'][doc_idx]['archivo'] = file
+                    # Match files to emprendedor documents: key = emp_doc_{doc_idx}
+                    elif key.startswith('emp_doc_'):
+                        parts = key.split('_')
+                        if len(parts) == 3:
+                            doc_idx = int(parts[2])
+                            if 'documentos' in data and doc_idx < len(data['documentos']):
+                                data['documentos'][doc_idx]['archivo'] = file
                 return data
             except (json.JSONDecodeError, ValueError, KeyError):
                 return request.data
