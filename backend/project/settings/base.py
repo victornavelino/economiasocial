@@ -306,11 +306,9 @@ MINIO_ACCESS_KEY = 'minioadmin'
 MINIO_SECRET_KEY = 'minioadmin'
 
 # Configuración AWS/S3
-#AWS_ACCESS_KEY_ID = MINIO_ACCESS_KEY
-##AWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY
-#AWS_STORAGE_BUCKET_NAME = 'economiasocial'  # El bucket que creaste
-# Alternativa
-AWS_ACCESS_KEY_ID = env.str('MINIO_ACCESS_KEY', 'minioadmin')
+
+#AWS_ACCESS_KEY_ID = env.str('MINIO_ACCESS_KEY', 'minioadmin')
+AWS_ACCESS_KEY_ID = env('MINIO_ACCESS_KEY')
 AWS_SECRET_ACCESS_KEY = env.str('MINIO_SECRET_KEY', 'minioadmin')
 AWS_STORAGE_BUCKET_NAME = env.str('MINIO_BUCKET_NAME', 'economiasocial')
 

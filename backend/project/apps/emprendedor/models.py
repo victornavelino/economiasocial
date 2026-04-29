@@ -57,7 +57,7 @@ class Emprendedor(models.Model):
     participa_mercado_itinerante= models.BooleanField(default=False, verbose_name="Participa en Mercado Itinerante")
     participa_ferias= models.BooleanField(default=False, verbose_name="Participa en Ferias")
     manipula_alimentos=models.ForeignKey(ManipulaAlimentos, on_delete=models.CASCADE, null=True, blank=True, related_name="emprendedor_manipula_alimentos")
-
+    interes_compras_publicas= models.BooleanField(default=False, verbose_name="Interes en Compras Publicas")
     def __str__(self):
         return self.persona.obtener_nombre_completo()
 

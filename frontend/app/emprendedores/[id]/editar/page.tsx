@@ -15,7 +15,7 @@ import Link from 'next/link';
 import {
   ArrowLeft, Save, Loader2, User, MapPin, FileText,
   Briefcase, Plus, Trash2, AlertCircle, Search, Check, Pencil, X,
-  Paperclip, FileUp,
+  Paperclip, FileUp, ClipboardList,
 } from 'lucide-react';
 
 // ── Schemas ────────────────────────────────────────────────────────────────
@@ -820,40 +820,41 @@ export default function EditarEmprendedor() {
               )}
             </div>
 
-            {/* ── Participación y Alimentos ── */}
+            {/* ── Participaciones ── */}
             <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-              <SectionTitle icon={FileText} title="Participación y Alimentos" />
+              <SectionTitle icon={ClipboardList} title="Participaciones" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all flex-1">
+                  <input
+                    type="checkbox"
+                    id="participa_mercado_itinerante"
+                    {...register('participa_mercado_itinerante')}
+                    className="w-4 h-4 rounded accent-[#1a6fa0] cursor-pointer"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">Mercado Itinerante</p>
+                    <p className="text-xs text-slate-400">Participa en mercado itinerante</p>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all flex-1">
+                  <input
+                    type="checkbox"
+                    id="participa_ferias"
+                    {...register('participa_ferias')}
+                    className="w-4 h-4 rounded accent-[#1a6fa0] cursor-pointer"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">Ferias</p>
+                    <p className="text-xs text-slate-400">Participa en ferias</p>
+                  </div>
+                </label>
+              </div>
+            </div>
 
-                {/* Checkboxes de participación */}
-                <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4">
-                  <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all flex-1">
-                    <input
-                      type="checkbox"
-                      id="participa_mercado_itinerante"
-                      {...register('participa_mercado_itinerante')}
-                      className="w-4 h-4 rounded accent-[#1a6fa0] cursor-pointer"
-                    />
-                    <div>
-                      <p className="text-sm font-semibold text-slate-700">Mercado Itinerante</p>
-                      <p className="text-xs text-slate-400">Participa en mercado itinerante</p>
-                    </div>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all flex-1">
-                    <input
-                      type="checkbox"
-                      id="participa_ferias"
-                      {...register('participa_ferias')}
-                      className="w-4 h-4 rounded accent-[#1a6fa0] cursor-pointer"
-                    />
-                    <div>
-                      <p className="text-sm font-semibold text-slate-700">Ferias</p>
-                      <p className="text-xs text-slate-400">Participa en ferias</p>
-                    </div>
-                  </label>
-                </div>
-
-                {/* Datos de ManipulaAlimentos */}
+            {/* ── Manipulación de Alimentos ── */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+              <SectionTitle icon={FileText} title="Manipulación de Alimentos" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="numero_carnet">N° de Carnet</Label>
                   <Input id="numero_carnet" {...register('numero_carnet')} placeholder="Ej: C-12345" />
@@ -870,7 +871,6 @@ export default function EditarEmprendedor() {
                   <Label htmlFor="vencimiento_habilitacion_bromatologica">Vencimiento Hab. Bromatológica</Label>
                   <Input id="vencimiento_habilitacion_bromatologica" type="date" {...register('vencimiento_habilitacion_bromatologica')} />
                 </div>
-
               </div>
             </div>
 

@@ -13,7 +13,7 @@ import {
 import Link from 'next/link';
 import {
     ArrowLeft, Save, Loader2, User, MapPin, FileText,
-    Briefcase, Plus, Trash2, AlertCircle, Search,
+    Briefcase, Plus, Trash2, AlertCircle, Search, ClipboardList,
 } from 'lucide-react';
 
 // ── Schemas ────────────────────────────────────────────────────────────────
@@ -611,52 +611,55 @@ export default function EditarEmprendedor() {
                         )}
                     </div>
 
-                    {/* ── Participación y Alimentos ── */}
+                    {/* ── Participaciones ── */}
                     <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-                        <SectionTitle icon={FileText} title="Participación y Alimentos" />
+                        <SectionTitle icon={ClipboardList} title="Participaciones" />
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                            <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4">
-                                <div className={`flex items-center gap-3 p-3 rounded-lg border flex-1 ${
+                            <div className={`flex items-center gap-3 p-3 rounded-lg border flex-1 ${
+                                (control as any)._formValues?.participa_mercado_itinerante
+                                    ? 'border-blue-200 bg-blue-50'
+                                    : 'border-slate-200 bg-slate-50'
+                            }`}>
+                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                                     (control as any)._formValues?.participa_mercado_itinerante
-                                        ? 'border-blue-200 bg-blue-50'
-                                        : 'border-slate-200 bg-slate-50'
+                                        ? 'bg-[#1a6fa0] border-[#1a6fa0]'
+                                        : 'bg-white border-slate-300'
                                 }`}>
-                                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                                        (control as any)._formValues?.participa_mercado_itinerante
-                                            ? 'bg-[#1a6fa0] border-[#1a6fa0]'
-                                            : 'bg-white border-slate-300'
-                                    }`}>
-                                        {(control as any)._formValues?.participa_mercado_itinerante && (
-                                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-slate-700">Mercado Itinerante</p>
-                                        <p className="text-xs text-slate-400">Participa en mercado itinerante</p>
-                                    </div>
+                                    {(control as any)._formValues?.participa_mercado_itinerante && (
+                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                    )}
                                 </div>
-                                <div className={`flex items-center gap-3 p-3 rounded-lg border flex-1 ${
-                                    (control as any)._formValues?.participa_ferias
-                                        ? 'border-blue-200 bg-blue-50'
-                                        : 'border-slate-200 bg-slate-50'
-                                }`}>
-                                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                                        (control as any)._formValues?.participa_ferias
-                                            ? 'bg-[#1a6fa0] border-[#1a6fa0]'
-                                            : 'bg-white border-slate-300'
-                                    }`}>
-                                        {(control as any)._formValues?.participa_ferias && (
-                                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-slate-700">Ferias</p>
-                                        <p className="text-xs text-slate-400">Participa en ferias</p>
-                                    </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-700">Mercado Itinerante</p>
+                                    <p className="text-xs text-slate-400">Participa en mercado itinerante</p>
                                 </div>
                             </div>
+                            <div className={`flex items-center gap-3 p-3 rounded-lg border flex-1 ${
+                                (control as any)._formValues?.participa_ferias
+                                    ? 'border-blue-200 bg-blue-50'
+                                    : 'border-slate-200 bg-slate-50'
+                            }`}>
+                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                                    (control as any)._formValues?.participa_ferias
+                                        ? 'bg-[#1a6fa0] border-[#1a6fa0]'
+                                        : 'bg-white border-slate-300'
+                                }`}>
+                                    {(control as any)._formValues?.participa_ferias && (
+                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-700">Ferias</p>
+                                    <p className="text-xs text-slate-400">Participa en ferias</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
+                    {/* ── Manipulación de Alimentos ── */}
+                    <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                        <SectionTitle icon={FileText} title="Manipulación de Alimentos" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="numero_carnet">N° de Carnet</Label>
                                 <Input id="numero_carnet" {...register('numero_carnet')} disabled={true} placeholder="—" />
@@ -673,7 +676,6 @@ export default function EditarEmprendedor() {
                                 <Label htmlFor="vencimiento_habilitacion_bromatologica">Vencimiento Hab. Bromatológica</Label>
                                 <Input id="vencimiento_habilitacion_bromatologica" type="date" {...register('vencimiento_habilitacion_bromatologica')} disabled={true} />
                             </div>
-
                         </div>
                     </div>
 
